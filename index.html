@@ -641,8 +641,8 @@ button{font-family:inherit}
 }
 .choice-btn.locked{opacity:.5;cursor:not-allowed;background:rgba(30,30,40,.7);border-color:#445;}
 .choice-btn.locked:hover{border-color:#556;transform:none;box-shadow:none;}
-/* 响应式：过窄屏幕退化为顶部分栏（避免完全被挤碎） */
-@media (max-aspect-ratio: 16/10){
+/* 响应式：过窄屏幕退化为顶部分栏（仅桌面，手机端在下面 1345 行另处理） */
+@media (max-aspect-ratio: 16/10) and (min-width:861px){
   .choices{left:50%;width:44%;}
 }
 
@@ -1097,7 +1097,7 @@ button{font-family:inherit}
   .intro-grid{grid-template-columns:1fr}
   .intro-logo{display:flex;align-items:center;gap:12px;justify-content:center}
   .intro-logo img{width:60px;height:60px}
-  .choices{width:92%;top:10%}
+  /* choices 已移到下面 1345 行的 @media (max-width:860px) 专门覆盖手机端定位 */
   .dialogue-text{font-size:13.5px}
   .speaker{font-size:13px}
   .stats-bar{flex-wrap:wrap;gap:4px;font-size:12px}
@@ -1342,11 +1342,46 @@ button{font-family:inherit}
 .ability-title-name{font-weight:700;font-size:13px;letter-spacing:1px}
 .ability-title-text{color:#d0c8f0;margin-left:4px}
 /* 封面能力图鉴按钮：普通风格，不加特效 */
-@media (max-width:760px){
-  .ability-overlay{flex-direction:column;gap:10px;overflow-y:auto}
-  .ability-left{flex:0 0 auto;height:auto}
-  .ability-card{width:180px;aspect-ratio:3/4}
-  .ability-right{flex:1 1 auto}
+@media (max-width:860px){
+  .choices{
+    /* 手机横屏：选项居中在画布右侧，top 50% 垂直居中更自然 */
+    top:auto;bottom:50%;transform:translateY(50%);
+    left:4%;width:92%;max-width:92%;
+  }
+  .choice-btn{font-size:12.5px;padding:8px 12px;border-radius:8px}
+
+  /* 能力图鉴：强制全屏可滚动 */
+  .ability-overlay{
+    flex-direction:column;gap:10px;
+    height:100vh;height:100dvh; /* dvh 解决 iOS 地址栏问题 */
+    max-height:none;
+    overflow-y:auto;overflow-x:hidden;
+    align-items:center;justify-content:flex-start;
+    padding:14px 12px 24px;
+  }
+  .ability-overlay.ability-fixed{
+    position:fixed;inset:0;
+    height:100vh;height:100dvh;
+    overflow-y:auto;overflow-x:hidden;
+    align-items:center;justify-content:flex-start;
+  }
+  .ability-left{flex:0 0 auto;height:auto;width:100%;align-items:center}
+  .ability-card{width:min(60vw,200px);aspect-ratio:3/4}
+  .ability-right{flex:0 0 auto;width:100%;display:flex;flex-direction:column;align-items:center}
+  .ability-hex{
+    flex:0 0 auto;width:min(72vw,240px);height:min(72vw,240px);
+  }
+  .ability-legend{
+    width:100%;max-width:min(92vw,320px);
+    grid-template-columns:repeat(2,1fr);
+    gap:6px 8px;
+  }
+  .ability-title-item{font-size:11.5px;padding:5px 8px}
+  .ability-title-name{font-size:12px}
+  .ability-close{
+    position:sticky;top:0;align-self:flex-end;
+    margin-bottom:2px;z-index:2;
+  }
 }
 </style>
 </head>
