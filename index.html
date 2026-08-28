@@ -1361,68 +1361,112 @@ button{font-family:inherit}
   }
   .choice-btn{font-size:12.5px;padding:8px 12px;border-radius:8px}
 
-  /* 能力图鉴：手机端改 block 布局让内容自然堆叠滚动 */
+  /* 能力图鉴：横屏 16:9 → PC 端布局等比缩小 0.6x */
   .ability-overlay{
-    display:block;            /* 不用 flex，内容直接堆叠滚 */
-    height:100vh;height:100dvh;
-    overflow-y:auto;overflow-x:hidden;
-    padding:14px 14px 28px;
+    position:absolute;inset:0;z-index:58;
+    /* 保留原 flex row 布局，整体等比缩小 */
+    background:linear-gradient(135deg,rgba(26,29,46,.96),rgba(20,34,54,.96));
+    backdrop-filter:blur(10px);
+    display:flex;align-items:center;justify-content:center;gap:14px;
+    padding:0;box-sizing:border-box;
+    transform-origin:center center;
+    /* 核心：用 scale(0.58) 把 PC 端 ~420px 宽的内容整体缩小到手机画布内 */
+    /* 但 scale 不占位，所以用 flex + min-width 让内容本身就是小尺寸 */
+    /* 改为直接缩小子元素更可靠 */
+    gap:10px;padding:8px 10px;
   }
   .ability-overlay.ability-fixed{
-    position:fixed;inset:0;
-    height:100vh;height:100dvh;
-    overflow-y:auto;overflow-x:hidden;
-    padding:14px 14px 28px;
+    position:fixed;inset:0;z-index:9999;
   }
-  .ability-close{
-    position:fixed;top:12px;right:14px;z-index:6;  /* fixed 让滚动时始终可见 */
-  }
+  /* 左：立绘卡（缩小版） */
   .ability-left{
-    display:flex;justify-content:center;margin-bottom:10px;
+    flex:0 0 28%;height:auto;
+    display:flex;flex-direction:column;align-items:center;gap:8px;
   }
-  .ability-card{width:min(52vw,180px);aspect-ratio:3/4}
-  .ability-right{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+  .ability-card{
+    width:min(22vw,130px);aspect-ratio:3/4;
+    border-radius:12px;padding:3px;
+  }
+  .ability-card-inner{border-radius:10px}
+  .ability-portrait{border-radius:8px}
+  .ability-card-label{padding:6px 8px 8px}
+  .ability-name{font-size:13px}
+  .ability-role{font-size:10px}
+  .ability-card-rank{font-size:13px;padding:3px 8px;border-radius:8px}
+
+  /* 右：六边形 + 数值 + 称号（缩小版） */
+  .ability-right{
+    flex:1 1 auto;min-width:0;
+    display:flex;flex-direction:column;
+    align-items:center;gap:6px;
+    overflow:hidden;
+  }
   .ability-hex{
-    flex:0 0 auto;width:min(68vw,230px);height:min(68vw,230px);
+    flex:0 0 auto;
+    width:min(42vw,200px);height:min(42vw,200px);
   }
+  /* 属性标签：3列 grid 缩小 */
   .ability-legend{
-    width:100%;max-width:min(94vw,340px);
-    grid-template-columns:repeat(2,1fr);
-    gap:6px 8px;
+    width:100%;max-width:min(68vw,240px);
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:4px 6px;
   }
+  .ability-leg-item{
+    padding:3px 6px;border-radius:7px;gap:4px;
+    font-size:10.5px;
+  }
+  .ability-leg-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .ability-leg-val{font-size:11px}
+  /* 称号列表：手机端也缩成紧凑列表 */
   .ability-titles{
-    width:100%;max-width:min(94vw,340px);
-    flex:0 0 auto;               /* 手机端头衔列表也固定高度，由 ability-overlay 外层统一滚 */
-    max-height:28vh;overflow-y:auto;
+    width:100%;max-width:min(68vw,240px);
+    flex:1 1 auto;min-height:0;
+    max-height:26vh;overflow-y:auto;
+    gap:3px;
   }
-  .ability-title-item{font-size:11.5px;padding:5px 8px}
-  .ability-title-name{font-size:12px}
-  .ability-hint{font-size:11px;color:#3d6ba0;text-align:center;margin-top:4px}
+  .ability-title-item{padding:3px 6px;font-size:10.5px;border-radius:6px}
+  .ability-title-name{font-size:11px}
+  .ability-title-text{font-size:10px}
+  .ability-hint{flex:0 0 auto;font-size:10px;color:#3d6ba0;text-align:center;margin-top:2px}
+
+  /* 关闭按钮：全局统一右上角 ✕ 圆形（手机端覆盖 .btn 默认样式） */
+  .ability-close{
+    font-family:inherit;
+    width:34px;height:34px;border-radius:50%;
+    font-size:17px;font-weight:700;line-height:1;
+    background:rgba(0,0,0,.55) !important;
+    border:1px solid rgba(255,255,255,.28) !important;
+    color:#fff !important;
+    padding:0;
+    display:flex;align-items:center;justify-content:center;
+    position:absolute;top:10px;right:10px;z-index:6;
+    cursor:pointer;
+    transition:transform .15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .ability-close:active{transform:rotate(90deg)}
 
   /* 热点对话框区域：强制盖在 hotspot 之上（z-index:16 hotspot:7），防止底部热点被误点 */
   .dialogue-box{z-index:25}
 
-  /* ============ 统一所有关闭按钮：右上角 ✕ 圆形 ============ */
-  .ability-close,
+  /* ============ 其他弹窗关闭按钮：统一右上角 ✕ 圆形 ============ */
   .clue-modal-close,
   .ci-char-modal-close,
   .ci-modal-close,
   .cp-close{
-    width:36px;height:36px;border-radius:50%;
+    width:34px;height:34px;border-radius:50%;
     font-size:17px;line-height:1;
     background:rgba(0,0,0,.55) !important;
     border:1px solid rgba(255,255,255,.25) !important;
     color:#fff !important;
     display:flex;align-items:center;justify-content:center;
-    cursor:pointer;
-    transition:transform .15s;
+    cursor:pointer;padding:0;
     -webkit-tap-highlight-color:transparent;
   }
   .clue-modal-close{  position:absolute;top:10px;right:10px;z-index:6}
   .ci-char-modal-close{position:absolute;top:8px;right:8px;z-index:4}
   .ci-modal-close{    position:absolute;top:10px;right:10px;z-index:3}
   .cp-close{          position:absolute;top:8px;right:8px;z-index:4}
-  .ability-close{     position:fixed;top:10px;right:10px;z-index:6} /* fixed 让滚动时始终可见 */
 }
 </style>
 </head>
@@ -1682,7 +1726,7 @@ button{font-family:inherit}
             <div id="dedRProgress" style="color:#4a89dc;font-size:12px;margin-bottom:14px">已推论 0 / 0 条</div>
             <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
               <button class="btn primary" onclick="continueAfterDed()">▶ 剧情推进</button>
-              <button class="btn" onclick="closeMask('dedResultCanvasModal')">✕ 关闭</button>
+              <button class="btn" onclick="closeMask('dedResultCanvasModal')">✕</button>
             </div>
           </div>
         </div>
@@ -1694,7 +1738,7 @@ button{font-family:inherit}
             <h3 style="color:#ffd36e;font-size:20px;margin-bottom:10px">推论提示</h3>
             <div id="dedHintBody" style="padding:12px 14px;background:rgba(74,137,220,.1);border-radius:10px;border:1px solid #2a4a7a;margin-bottom:12px;text-align:left;max-height:300px;overflow:auto"></div>
             <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-              <button class="btn" onclick="closeMask('dedHintModal')">✕ 关闭</button>
+              <button class="btn" onclick="closeMask('dedHintModal')">✕</button>
             </div>
           </div>
         </div>
@@ -1825,7 +1869,7 @@ button{font-family:inherit}
       <button class="btn" onclick="branchZoom(1.25)">➕ 放大</button>
       <button class="btn" onclick="branchZoom(0.8)">➖ 缩小</button>
       <button class="btn" onclick="fitBranchView()">🎯 适配</button>
-      <button class="btn primary" onclick="closeBranchFullscreen()">✕ 关闭</button>
+      <button class="btn primary" onclick="closeBranchFullscreen()">✕</button>
     </div>
   </div>
   <div class="branch-canvas" id="branchCanvas">
@@ -2010,7 +2054,7 @@ function showCharOverlay(){
     ov.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h2 style="color:#d7c7ff;font-size:18px;letter-spacing:2px">👥 主线人物</h2>
-        <button class="btn primary" onclick="closeCharOverlay()">✕ 关闭</button>
+        <button class="btn primary" onclick="closeCharOverlay()">✕</button>
       </div>
       <div class="char-cards" id="charCardsOverlay" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"></div>
     `;
@@ -2051,7 +2095,7 @@ function openAbilityChart(){
   ov.id = 'abilityOverlay';
   ov.className = 'ability-overlay';
   ov.innerHTML = `
-    <button class="btn primary ability-close" onclick="closeAbilityChart()">✕ 关闭</button>
+    <button class="ability-close" onclick="closeAbilityChart()" aria-label="关闭">✕</button>
     <div class="ability-left">
       <div class="ability-card">
         <div class="ability-card-inner">
