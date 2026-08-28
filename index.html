@@ -1103,6 +1103,98 @@ button{font-family:inherit}
   .stats-bar{flex-wrap:wrap;gap:4px;font-size:12px}
   .clue-list{grid-template-columns:1fr}
   .canvas-tools button{width:34px;height:34px;font-size:14px}
+
+  /* ====== 手机端：横屏游戏铺满 + 作品介绍收进浮动按钮 ====== */
+  .game-screen{padding:0;background:#0d0f1a}
+  .game-wrap{max-width:none;margin:0}
+  .game-canvas{
+    border-radius:0;border:none;
+    box-shadow:none;
+    /* 横屏铺满：用 100vw 宽 + 56.25% 高度，再受视口高度限制 */
+    width:100vw;max-width:100vw;
+    padding-top:0;
+    height:100vh;max-height:100vh;
+    /* 横向溢出隐藏 */
+    overflow:hidden;
+  }
+  /* 画布内元素缩放适配 */
+  .dialogue-text{font-size:12.5px}
+  .speaker{font-size:12px}
+  .canvas-tools{top:6px;right:6px}
+  .canvas-tools button{width:30px;height:30px;font-size:12px}
+  .stats-bar{font-size:11px;gap:2px}
+  .stats-bar .stat-item{padding:2px 4px}
+
+  /* 作品介绍模块：隐藏，改为浮动按钮触发 */
+  .cover-info{display:none}
+  .ci-fab{
+    display:flex;
+    position:fixed;bottom:14px;right:14px;z-index:90;
+    width:48px;height:48px;border-radius:50%;
+    background:linear-gradient(135deg,#4a89dc,#2a5fa8);
+    border:2px solid #6ba5ef;
+    box-shadow:0 4px 16px rgba(0,0,0,.5),0 0 0 3px rgba(74,137,220,.15);
+    color:#fff;font-size:22px;cursor:pointer;
+    align-items:center;justify-content:center;
+    transition:transform .2s ease, box-shadow .2s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .ci-fab:active{transform:scale(.92)}
+  .ci-fab.show{display:flex}
+
+  /* 作品介绍弹窗（全屏 modal） */
+  .ci-modal{
+    display:none;
+    position:fixed;inset:0;z-index:95;
+    background:rgba(13,15,26,.97);
+    backdrop-filter:blur(8px);
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .ci-modal.show{display:block}
+  .ci-modal-head{
+    position:sticky;top:0;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px;
+    background:rgba(13,15,26,.98);
+    border-bottom:1px solid #2a4a7a;
+  }
+  .ci-modal-head h3{color:#f5efff;font-size:16px;margin:0;letter-spacing:1px}
+  .ci-modal-close{
+    width:36px;height:36px;border-radius:50%;
+    background:rgba(231,76,60,.2);border:1px solid #e74c3c;
+    color:#e74c3c;font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .ci-modal-close:active{background:rgba(231,76,60,.4)}
+
+  /* 横屏提示（竖屏时显示） */
+  .rotate-hint{
+    display:none;
+    position:fixed;inset:0;z-index:9998;
+    background:rgba(13,15,26,.98);
+    align-items:center;justify-content:center;
+    text-align:center;padding:40px 24px;
+    color:#8ac0ff;font-size:15px;line-height:2;
+  }
+  .rotate-hint .rh-icon{font-size:48px;margin-bottom:16px;animation:rhShake 2s ease-in-out infinite}
+  @keyframes rhShake{
+    0%,100%{transform:rotate(0deg);}
+    50%{transform:rotate(90deg);}
+  }
+}
+/* 仅竖屏手机 */
+@media (max-width:860px) and (orientation:portrait){
+  .rotate-hint{display:flex}
+  .game-screen{overflow:hidden}
+}
+
+/* 桌面端隐藏手机专属元素 */
+@media (min-width:861px){
+  .ci-fab{display:none !important}
+  .ci-modal{display:none !important}
+  .rotate-hint{display:none !important}
 }
 
 /* ============ 能力图鉴（典藏版小卡 + 六边形雷达图） ============ */
@@ -1590,6 +1682,27 @@ button{font-family:inherit}
         <div class="ci-tab-pane" id="ci-tab-chars"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- 手机端浮动按钮：📋 打开作品介绍 -->
+<button class="ci-fab" id="ciFab" aria-label="作品介绍" onclick="toggleCiModal()">📋</button>
+
+<!-- 手机端作品介绍弹窗（内容从 cover-info 克隆） -->
+<div class="ci-modal" id="ciModal" aria-hidden="true">
+  <div class="ci-modal-head">
+    <h3>📋 作品介绍</h3>
+    <button class="ci-modal-close" onclick="toggleCiModal(false)">✕</button>
+  </div>
+  <div class="ci-modal-body" id="ciModalBody"></div>
+</div>
+
+<!-- 竖屏旋转提示 -->
+<div class="rotate-hint" id="rotateHint">
+  <div>
+    <div class="rh-icon">📱↻</div>
+    <p>请将手机横置以获得最佳游戏体验</p>
+    <p style="font-size:12px;color:#5a7aa0">横屏 16:9 画幅 · 沉浸推理</p>
   </div>
 </div>
 
@@ -4312,6 +4425,45 @@ document.addEventListener('DOMContentLoaded', ()=>{
     refreshRating();
   })();
 
+  // ====== 手机端作品介绍弹窗 ======
+  let _ciModalInited = false;
+  function toggleCiModal(force){
+    const modal = document.getElementById('ciModal');
+    const fab   = document.getElementById('ciFab');
+    if(!modal) return;
+    const shouldShow = (force === false) ? false : (force === true ? true : !modal.classList.contains('show'));
+    if(shouldShow){
+      // 首次打开：克隆 cover-info 内容到弹窗 body
+      if(!_ciModalInited){
+        const src = document.querySelector('.cover-info .ci-wrap');
+        const body = document.getElementById('ciModalBody');
+        if(src && body){
+          body.innerHTML = '';
+          const clone = src.cloneNode(true);
+          clone.style.padding = '16px';
+          body.appendChild(clone);
+          // 重新绑定 tab 切换（克隆的 DOM 没有事件）
+          body.querySelectorAll('.ci-tab').forEach(tab=>{
+            tab.addEventListener('click', ()=>{
+              body.querySelectorAll('.ci-tab').forEach(t=>t.classList.remove('active'));
+              body.querySelectorAll('.ci-tab-pane').forEach(p=>p.classList.remove('active'));
+              tab.classList.add('active');
+              const pane = body.querySelector('#ci-tab-' + tab.dataset.tab);
+              if(pane) pane.classList.add('active');
+            });
+          });
+        }
+        _ciModalInited = true;
+      }
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden','false');
+    } else {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
+    }
+  }
+  window.toggleCiModal = toggleCiModal;
+
   // Tab 切换
   document.querySelectorAll('.ci-tab').forEach(tab=>{
     tab.addEventListener('click', ()=>{
@@ -4683,6 +4835,9 @@ window.toggleStatDetail = toggleStats;
             if(typeof refreshRating === 'function') refreshRating();
           }
         }
+        // 手机端：显示浮动「📋」按钮
+        const fab = document.getElementById('ciFab');
+        if(fab) fab.classList.add('show');
       }catch(e){ console.warn('[preload] init error:', e); }
       document.addEventListener('click', ()=>{
         if(typeof bgmAudio !== 'undefined' && bgmAudio.paused && currentBgm && !bgmMuted){
