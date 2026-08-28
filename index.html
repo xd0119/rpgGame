@@ -1,0 +1,4060 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>暴雨孤岛</title>
+<link rel="icon" type="image/jpeg" href="assets/logo/game_logo.jpg">
+<style>
+/* ============ 全局重置 ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  background:#1a1d2e;color:#e8e6f0;
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+  min-height:100%;overflow:hidden;
+}
+a{color:#8ac0ff;text-decoration:none}
+button{font-family:inherit}
+
+/* ============ 统一滚动条 ============ */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.04);border-radius:4px}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#2a4a7a,#3d6ba0);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#3d6ba0,#4a89dc)}
+::-webkit-scrollbar-thumb:active{background:linear-gradient(180deg,#4a89dc,#6ba5ef)}
+/* Firefox */
+*{scrollbar-width:thin;scrollbar-color:#3d6ba0 rgba(255,255,255,.04)}
+
+/* ============ 屏幕系统 ============ */
+.screen{position:fixed;inset:0;overflow-y:auto;z-index:1}
+.hidden{display:none !important}
+
+/* ============ 通用按钮 ============ */
+.btn{
+  padding:8px 16px;border-radius:8px;border:1px solid #3d6ba0;
+  background:rgba(255,255,255,.06);color:#e8e6f0;cursor:pointer;
+  font-size:13.5px;transition:all .2s;
+}
+.btn:hover{background:#3d6ba0;color:#fff;transform:translateY(-1px)}
+.btn.primary{background:linear-gradient(135deg,#4a89dc,#3a7bd5);border-color:#6ba5ef;color:#fff}
+.btn.primary:hover{background:linear-gradient(135deg,#6ba5ef,#3d6ba0)}
+.btn.danger{border-color:#e27b7b}
+.btn.danger:hover{background:#e27b7b;color:#fff}
+
+/* ============ 封面屏 ============ */
+.cover-screen{
+  background:url('assets/backgrounds/bg01_mansion_outside.jpg') center/cover no-repeat;
+  display:flex;flex-direction:column;align-items:stretch;
+}
+.cover-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:1;
+}
+.cover-rain{
+  position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;display:none;
+}
+.cover-rain.show{display:block}
+.cover-content{
+  position:relative;z-index:3;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  padding:30px;flex:1 0 auto;justify-content:center;min-height:50vh;
+}
+.cover-logo{
+  width:120px;height:120px;border-radius:16px;
+  border:3px solid #4a89dc;object-fit:cover;
+  box-shadow:0 8px 30px rgba(74,137,220,.5);
+}
+.cover-title{
+  font-size:38px;font-weight:800;letter-spacing:3px;color:#f5efff;
+  text-shadow:0 2px 20px rgba(0,0,0,.8),0 0 30px rgba(74,137,220,.4);
+}
+.cover-subtitle{
+  font-size:16px;color:#8ac0ff;letter-spacing:2px;
+  text-shadow:0 1px 8px rgba(0,0,0,.8);
+  margin-bottom:10px;
+}
+.cover-menu{
+  display:flex;flex-direction:column;gap:12px;margin-top:10px;width:240px;
+}
+.cover-menu .btn{
+  padding:13px 20px;font-size:16px;border-radius:10px;
+  background:rgba(20,34,54,.75);backdrop-filter:blur(6px);
+  border:1.5px solid #3d6ba0;color:#f5efff;letter-spacing:1px;
+}
+.cover-menu .btn:hover{
+  background:linear-gradient(135deg,rgba(74,137,220,.85),rgba(123,95,232,.85));
+  border-color:#6ba5ef;transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(74,137,220,.35);
+}
+.cover-menu .btn.primary{
+  background:linear-gradient(135deg,#4a89dc,#3a7bd5);border-color:#6ba5ef;
+}
+
+/* ============ 作品介绍模块 ============ */
+.cover-info{
+  position:relative;z-index:3;background:rgba(9,20,33,.95);
+  border-top:1px solid #2a4a7a;
+}
+.ci-wrap{max-width:960px;margin:0 auto;padding:24px 28px 40px}
+.ci-head{display:flex;gap:24px;margin-bottom:10px}
+.ci-head-left{flex:1 1 auto;min-width:0}
+.ci-title{font-size:22px;font-weight:800;color:#f5efff;margin:0 0 6px;letter-spacing:1px}
+.ci-subtitle{font-size:13px;color:#8ac0ff;margin-bottom:10px;line-height:1.5}
+.ci-tags{display:flex;gap:6px;flex-wrap:wrap}
+.ci-tag{
+  padding:3px 12px;border-radius:10px;font-size:11.5px;
+  border:1px solid #2a4a7a;color:#8ac0ff;background:rgba(42,74,122,.2);
+}
+.ci-tag-main{background:linear-gradient(135deg,#4a89dc,#3a7bd5);border-color:#6ba5ef;color:#fff}
+.ci-head-right{flex:0 0 auto}
+.ci-stats{display:flex;gap:10px}
+.ci-stat-card{
+  background:rgba(74,137,220,.08);border:1px solid #2a4a7a;border-radius:10px;
+  padding:12px 18px;text-align:center;min-width:90px;
+}
+.ci-stat-num{font-size:26px;font-weight:800;color:#7fff7f;line-height:1.1}
+.ci-stat-num.ci-num-yellow{color:#ffd36e}
+.ci-stat-label{font-size:11px;color:#8ac0ff;margin-top:4px}
+
+.ci-rating-stars{display:flex;justify-content:center;gap:3px;margin-top:6px}
+.ci-rating-star{
+  font-size:16px;color:#2a4a7a;cursor:pointer;
+  transition:color .15s ease, transform .1s ease;user-select:none;
+}
+.ci-rating-star:hover{transform:scale(1.12)}
+.ci-rating-star.on{color:#ffd36e;filter:drop-shadow(0 0 2px rgba(255,211,110,.4))}
+
+.ci-char-portrait img{
+  width:72px;height:72px;border-radius:50%;border:2px solid #2a4a7a;
+  object-fit:cover;object-position:center top;
+  background:#142236;display:block;
+  image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;
+}
+.ci-tabs{display:flex;gap:4px;border-bottom:1px solid #2a4a7a;margin-bottom:16px}
+.ci-tab{
+  background:none;border:none;color:#3d6ba0;font-size:13px;padding:8px 16px;
+  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.ci-tab.active{color:#f5efff;border-bottom-color:#4a89dc}
+.ci-tab-pane{display:none}
+.ci-tab-pane.active{display:block}
+.ci-tab-pane p{color:#8ac0ff;font-size:13px;line-height:1.7;margin:0 0 10px}
+.ci-tab-pane b{color:#f5efff}
+.ci-features{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px}
+.ci-feature{
+  font-size:12.5px;color:#8ac0ff;padding:6px 12px;
+  background:rgba(74,137,220,.08);border:1px solid #2a4a7a;border-radius:8px;
+}
+.ci-endings-list,.ci-clues-list,.ci-chars-list{display:grid;gap:10px}
+.ci-endings-list{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.ci-clues-list{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.ci-chars-list{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.ci-ending-item,.ci-clue-item{
+  padding:10px 14px;background:rgba(74,137,220,.06);border:1px solid #2a4a7a;
+  border-radius:8px;font-size:12px;
+}
+.ci-ending-item h4,.ci-clue-item h4{color:#f5efff;margin:0 0 4px;font-size:13px}
+.ci-ending-item p,.ci-clue-item p{color:#8ac0ff;margin:0;line-height:1.5}
+.ci-ending-item.unlocked{border-color:#4a89dc;background:rgba(74,137,220,.12)}
+.ci-ending-item.locked{opacity:.55}
+.ci-char-item{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:12px 8px;background:rgba(74,137,220,.06);border:1px solid #2a4a7a;
+  border-radius:10px;
+}
+.ci-char-item img{
+  width:64px;height:64px;border-radius:50%;border:2px solid #2a4a7a;
+  object-fit:cover;background:#142236;
+}
+.ci-char-item b{font-size:12.5px;color:#f5efff}
+.ci-char-item span{font-size:11px;color:#3d6ba0}
+
+.ci-chars-detailed{display:flex;flex-direction:column;gap:10px}
+.ci-char-detailed{
+  display:flex;gap:12px;align-items:flex-start;
+  background:rgba(74,137,220,.06);border:1px solid #2a4a7a;border-radius:10px;
+  padding:12px 14px;
+}
+.ci-char-portrait img{
+  width:60px;height:60px;border-radius:50%;border:2px solid #2a4a7a;
+  object-fit:cover;background:#142236;display:block;
+}
+.ci-char-text{flex:1 1 auto;min-width:0}
+.ci-char-text h4{color:#f5efff;font-size:13.5px;margin:0 0 4px}
+.ci-char-text h4 span{color:#3d6ba0;font-weight:400;font-size:11.5px;margin-left:6px}
+.ci-char-text p{color:#8ac0ff;font-size:12px;line-height:1.6;margin:0}
+
+/* ============ 人物图鉴屏 ============ */
+.char-screen{background:#1a1d2e;padding:30px 24px}
+.char-header{
+  display:flex;align-items:center;gap:16px;margin-bottom:30px;
+  max-width:1100px;margin-left:auto;margin-right:auto;
+}
+.char-header h2{font-size:24px;color:#d7c7ff;letter-spacing:2px}
+.char-cards{
+  display:flex;gap:24px;justify-content:center;flex-wrap:wrap;
+  max-width:1100px;margin:0 auto;
+}
+.char-card{
+  flex:1;min-width:280px;max-width:360px;
+  background:linear-gradient(160deg,#142236,#1a1d2e);
+  border:2px solid #2a4a7a;border-radius:14px;overflow:hidden;
+  transition:all .3s;
+}
+.char-card:hover{border-color:#4a89dc;transform:translateY(-4px);box-shadow:0 10px 30px rgba(74,137,220,.25)}
+.char-card-bg{
+  height:440px;background:linear-gradient(180deg,#142236,#1a2d47);
+  display:flex;align-items:flex-end;justify-content:center;
+  overflow:hidden;position:relative;
+}
+.char-card-bg::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 70%,rgba(74,137,220,.15),transparent 60%);
+}
+.char-card-img{
+  height:400px;object-fit:contain;position:relative;z-index:1;
+  filter:drop-shadow(0 4px 16px rgba(0,0,0,.5));
+}
+.char-card-body{padding:16px 18px}
+.char-card-body h3{color:#f5efff;font-size:19px;margin-bottom:4px}
+.char-role{color:#4a89dc;font-size:13px;margin-bottom:10px}
+.char-card-body p{color:#c8bde8;font-size:13.5px;line-height:1.7}
+
+/* ============ 游戏屏 ============ */
+.game-screen{background:#1a1d2e;padding:20px 16px 40px}
+.game-wrap{width:100%;max-width:960px;margin:0 auto 24px}
+.game-canvas{
+  position:relative;width:100%;padding-top:56.25%;
+  border-radius:12px;overflow:hidden;
+  box-shadow:0 10px 36px rgba(0,0,0,.5);
+  border:1px solid #1a2d47;
+}
+.game-inner{position:absolute;inset:0;overflow:hidden}
+.bg-img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:1;
+}
+.bg-overlay{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:rgba(0,0,0,.5);opacity:0;transition:opacity .4s ease;
+}
+.bg-overlay.dim{opacity:1}
+
+/* 立绘（单人居中） */
+.char-center{
+  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  height:90%;max-width:75%;object-fit:contain;z-index:5;
+  filter:drop-shadow(0 6px 24px rgba(0,0,0,.65));
+  opacity:0;transition:opacity .4s ease,left .35s ease,transform .35s ease,height .35s ease,max-width .35s ease;
+  pointer-events:none;
+}
+.char-center.show{opacity:1}
+/* 立绘（群像并排，用于多人同框登场） */
+.char-group{
+  position:absolute;bottom:0;left:0;right:0;z-index:5;
+  display:flex;justify-content:center;align-items:flex-end;gap:6px;
+  height:88%;pointer-events:none;opacity:0;transition:opacity .5s ease,left .35s ease,right .35s ease,height .35s ease;
+}
+.char-group.show{opacity:1}
+.char-group .gp{
+  height:78%;max-width:24%;object-fit:contain;
+  filter:drop-shadow(0 4px 16px rgba(0,0,0,.7)) brightness(.9);
+  transition:filter .3s ease,transform .3s ease,height .3s ease,max-width .3s ease;
+}
+.char-group .gp.active{
+  filter:drop-shadow(0 6px 22px rgba(255,211,110,.5)) brightness(1.15);
+  transform:translateY(-6px) scale(1.04);
+}
+/* 指认嫌疑人：未解锁立绘半透明灰度，提示玩家需继续推论 */
+.char-group .gp.locked{
+  opacity:.5; filter:grayscale(.7) brightness(.6);
+}
+/* 指认选项：未完成对应推论时灰度锁定 */
+.choice-btn.ded-locked{
+  background:rgba(20,34,54,.7); border-color:#1e3a5f; color:#6b8db5;
+  cursor:not-allowed;
+}
+.choice-btn.ded-locked:hover{ transform:none; border-color:#1e3a5f; }
+/* 指认提示条：指引玩家多推论解锁更多嫌疑人 */
+.accuse-hint{
+  background:rgba(20,34,54,.85); border:1px solid #3d6ba0; border-radius:8px;
+  padding:7px 12px; margin-bottom:8px; color:#ffd36e; font-size:12.5px; line-height:1.5;
+}
+/* 已合成推论列表 */
+.ded-done-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.ded-done-item{
+  background:rgba(40,60,45,.55);border:1px solid #3a5a40;border-radius:8px;
+  padding:8px 12px;
+}
+.ded-done-item b{font-size:13px}
+.ded-done-item small{font-size:11.5px}
+/* 选项出现时：左右分栏布局，立绘区在左（52%宽度），选项区在右（48%宽度），绝对不重叠 */
+.game-inner.choices-open .char-center{
+  left:26%;transform:translateX(-50%);height:86%;max-width:50%;
+}
+.game-inner.choices-open .char-group{
+  left:0;right:48%;height:82%;
+}
+.game-inner.choices-open .char-group .gp{height:74%;max-width:22%;}
+
+/* 雨层 */
+.rain-layer{
+  position:absolute;inset:0;z-index:8;pointer-events:none;overflow:hidden;display:none;
+}
+.rain-layer.show{display:block}
+.rain-drop{
+  position:absolute;width:2px;background:linear-gradient(180deg,transparent,rgba(200,210,255,.7));
+  animation:fall linear infinite;
+}
+@keyframes fall{0%{transform:translateY(-60px)}100%{transform:translateY(120%)}}
+
+/* 闪光 */
+.glow-flash{
+  position:absolute;inset:0;z-index:10;pointer-events:none;
+  background:radial-gradient(circle at center,rgba(255,235,180,.4) 0%,transparent 70%);
+  opacity:0;
+}
+.glow-flash.on{animation:glowPulse 2s ease}
+@keyframes glowPulse{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+
+/* 抖动 */
+.shake{animation:shakeAnim .45s}
+@keyframes shakeAnim{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(-6px,3px)}
+  40%{transform:translate(5px,-4px)}
+  60%{transform:translate(-4px,4px)}
+  80%{transform:translate(4px,-2px)}
+}
+
+/* 热点（场景中叠加小线索图，拾取后放大） */
+#hotspots{position:absolute;inset:0;z-index:7}
+.hotspot{
+  position:absolute;width:8%;min-width:48px;min-height:48px;
+  aspect-ratio:1/1;
+  cursor:pointer;pointer-events:auto;display:none;border-radius:50%;z-index:7;
+  overflow:visible;
+}
+.hotspot.show{display:block}
+.hotspot .clue-mini{
+  width:100%;height:100%;object-fit:cover;border-radius:50%;
+  border:2.5px solid #ffd36e;display:block;
+  box-shadow:0 0 14px 5px rgba(255,235,120,.6);
+  animation:hotPulse 1.4s ease-in-out infinite;
+}
+.hotspot.found{pointer-events:auto}
+.hotspot.found .clue-mini{
+  animation:none;opacity:.4;border-color:#7fff7f;
+  box-shadow:0 0 8px 2px rgba(127,255,127,.4);
+}
+.hotspot.found::after{
+  content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#7fff7f;font-size:20px;font-weight:700;text-shadow:0 0 4px #000;
+  pointer-events:none;
+}
+/* 干扰物热点：问号图标，蓝紫色光晕，区分于关键线索 */
+.hotspot.fake::after{
+  content:'?';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#4a89dc;font-size:22px;font-weight:700;text-shadow:0 0 4px #000;
+  pointer-events:none;
+}
+.hotspot.fake{
+  border:2.5px dashed rgba(74,137,220,.7);border-radius:50%;
+  box-shadow:0 0 12px 4px rgba(74,137,220,.45);
+  animation:hotPulse 1.6s ease-in-out infinite;
+}
+@keyframes hotPulse{
+  0%,100%{box-shadow:0 0 8px 2px rgba(255,235,120,.5);transform:scale(1)}
+  50%{box-shadow:0 0 18px 8px rgba(255,235,120,.7);transform:scale(1.06)}
+}
+
+/* 放大镜搜证模式鼠标 */
+.game-inner.search-mode{
+  cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'><circle cx='14' cy='14' r='10' fill='rgba(255,211,110,0.12)' stroke='%23ffd36e' stroke-width='2.5'/><line x1='21' y1='21' x2='31' y2='31' stroke='%23ffd36e' stroke-width='3.2' stroke-linecap='round'/></svg>") 16 16, zoom-in;
+}
+.game-inner.search-mode .dialogue-box,
+.game-inner.search-mode .canvas-tools,
+.game-inner.search-mode .canvas-panel{cursor:auto}
+
+/* 选项 —— 默认与立绘左右分栏：右 48% 垂直居中，立绘占左 52%，永远不遮挡 */
+.choices{
+  position:absolute;top:50%;left:54%;transform:translateY(-50%);
+  width:42%;max-width:none;z-index:22;
+  display:none;flex-direction:column;gap:7px;
+}
+.choices.show{display:flex}
+.choice-btn{
+  padding:10px 16px;border-radius:10px;cursor:pointer;text-align:left;
+  background:rgba(20,34,54,.88);backdrop-filter:blur(6px);
+  border:1.5px solid #3d6ba0;color:#f5efff;font-size:13.5px;
+  transition:all .2s;pointer-events:auto;
+}
+.choice-btn:hover{
+  background:linear-gradient(135deg,rgba(74,137,220,.9),rgba(123,95,232,.9));
+  border-color:#6ba5ef;transform:translateX(6px);
+}
+.choice-btn.locked{opacity:.5;cursor:not-allowed;background:rgba(30,30,40,.7);border-color:#445;}
+.choice-btn.locked:hover{border-color:#556;transform:none;box-shadow:none;}
+/* 响应式：过窄屏幕退化为顶部分栏（避免完全被挤碎） */
+@media (max-aspect-ratio: 16/10){
+  .choices{left:50%;width:44%;}
+}
+
+/* 画布工具按钮 */
+.canvas-tools{
+  position:absolute;top:10px;right:10px;z-index:20;
+  display:flex;gap:8px;
+}
+.canvas-tools button{
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(20,34,54,.75);backdrop-filter:blur(6px);
+  border:1.5px solid #3d6ba0;color:#f5efff;font-size:16px;
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;
+}
+.canvas-tools button:hover{background:#4a89dc;transform:scale(1.1)}
+
+/* 数值栏（左上角悬浮紧凑版） */
+.stats-bar{
+  position:absolute;top:8px;left:8px;z-index:20;
+  display:none;flex-direction:row;gap:3px;flex-wrap:wrap;
+  font-size:11px;max-width:220px;
+}
+.stats-bar.show{display:flex}
+.stat-item{
+  display:flex;align-items:center;gap:3px;
+  padding:2px 6px;background:rgba(26,29,46,.85);border-radius:10px;
+  border:1px solid #2a4a7a;cursor:default;transition:all .15s;
+  backdrop-filter:blur(6px);position:relative;
+}
+.stat-item:hover{background:rgba(74,137,220,.3);border-color:#4a89dc}
+.stat-label{color:#8ac0ff;font-size:10px}
+.stat-detail{
+  display:none;position:absolute;top:100%;left:0;margin-top:4px;
+  background:rgba(26,29,46,.97);border:1px solid #2a4a7a;border-radius:8px;
+  padding:8px 12px;font-size:11px;line-height:1.6;min-width:200px;max-width:260px;
+  z-index:30;backdrop-filter:blur(8px);box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+.stat-detail.show{display:block}
+.stat-value{
+  min-width:24px;padding:1px 7px;border-radius:10px;
+  background:rgba(138,192,255,.15);border:1px solid #2a4a7a;
+  color:#f3eaff;font-weight:600;text-align:center;font-size:11.5px;
+}
+.stat-detail{
+  display:none;margin-top:4px;padding:8px 10px;
+  background:rgba(26,29,46,.92);border:1px solid #2a4a7a;border-radius:8px;
+  font-size:11px;line-height:1.6;max-width:220px;
+}
+.stat-detail.show{display:block;animation:zoomIn .2s ease}
+.stat-detail h5{color:#ffd36e;font-size:11.5px;margin-bottom:4px}
+.stat-detail .log-item{display:flex;justify-content:space-between;padding:1px 0;color:#c8bde8}
+.stat-detail .log-item .amt{color:#7fff7f;font-weight:600}
+.stat-detail .log-item .neg{color:#ff9b9b}
+
+/* 对话条 */
+.dialogue-box{
+  position:absolute;bottom:0;left:0;right:0;z-index:16;
+  background:linear-gradient(180deg,rgba(26,29,46,.85),rgba(26,29,46,.96));
+  border-top:1.5px solid #3d6ba0;backdrop-filter:blur(8px);
+  padding:14px 22px 16px;min-height:110px;
+}
+.speaker{
+  display:inline-block;font-size:15px;font-weight:700;
+  color:#d7c7ff;margin-bottom:6px;padding:2px 14px;border-radius:14px;
+  background:rgba(74,137,220,.2);border:1px solid #3d6ba0;
+}
+.speaker.lu{color:#a6f0ff;border-color:#5fb8d8;background:rgba(95,184,216,.18)}
+.speaker.shen{color:#ffb8d8;border-color:#4a89dc;background:rgba(74,137,220,.18)}
+.speaker.hero{color:#fff0a6;border-color:#d8b85f;background:rgba(216,184,95,.18)}
+.dialogue-text{
+  font-size:15px;line-height:1.8;color:#e8e6f0;min-height:42px;
+  cursor:pointer;white-space:pre-wrap;
+}
+.dialogue-text.done::after{
+  content:' ▼';color:#4a89dc;animation:blink 1s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ============ 画布内面板（覆盖16:9画布，100%宽度填满） ============ */
+.canvas-panel{
+  position:absolute;left:0;right:0;top:0;bottom:0;z-index:30;display:none;
+  background:rgba(26,29,46,.94);backdrop-filter:blur(10px);
+  overflow-y:auto;padding:18px;
+}
+.canvas-panel.show{display:flex;flex-direction:column}
+.cp-inner{max-width:680px;margin:0 auto;width:100%}
+.cp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cp-head h3{color:#f5efff;font-size:18px}
+.cp-close{
+  width:32px;height:32px;border-radius:50%;border:1px solid #3d6ba0;
+  background:rgba(255,255,255,.08);color:#e8e6f0;font-size:16px;cursor:pointer;
+}
+.cp-close:hover{background:#e27b7b;color:#fff}
+.hint{color:#4a89dc;font-size:13px;margin-bottom:12px}
+
+/* 线索卡片网格 */
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:6px}
+.card{
+  background:rgba(255,255,255,.06);border:1px solid #2a4a7a;
+  border-radius:10px;padding:12px 14px;transition:all .2s;
+}
+.card:hover{border-color:#4a89dc;transform:translateY(-2px)}
+.card.locked{opacity:.55;filter:grayscale(.6)}
+.card h4{color:#ffd36e;font-size:14px;margin-bottom:6px}
+.card p{color:#c8bde8;font-size:12.5px;line-height:1.6}
+.card .meta{color:#4a89dc;font-size:11.5px;margin-top:6px}
+
+/* 推论槽位 */
+.slot-row{display:flex;gap:8px;margin:14px 0;align-items:center;flex-wrap:wrap;justify-content:center}
+.slot{
+  flex:1 1 100px;min-width:100px;min-height:58px;padding:8px;border-radius:8px;
+  border:2px dashed #3d6ba0;background:rgba(255,255,255,.03);
+  display:flex;align-items:center;justify-content:center;color:#4a89dc;font-size:12px;cursor:pointer;
+}
+.slot.filled{border-style:solid;border-color:#4a89dc;background:rgba(74,137,220,.12);color:#f5efff;flex-direction:column;text-align:center}
+.slot.plus{min-width:24px;max-width:30px;flex:0 0 24px;font-size:18px;font-weight:700;cursor:default;border:none;background:none}
+.clue-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;position:relative;z-index:2}
+.clue-item{
+  padding:9px 11px;border-radius:8px;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid #2a4a7a;transition:all .2s;
+  pointer-events:auto;user-select:none;
+}
+.clue-item:hover{border-color:#4a89dc;transform:translateY(-1px)}
+.clue-item.selected{border-color:#ffd36e;background:rgba(255,211,110,.12)}
+.clue-item h5{color:#ffd36e;font-size:13px;margin-bottom:3px;pointer-events:none}
+.clue-item p{color:#c8bde8;font-size:12px;line-height:1.5;pointer-events:none}
+
+/* 时间线卡片 */
+.tl-cards{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.tl-card{
+  background:rgba(255,255,255,.06);border:1px solid #2a4a7a;
+  border-radius:10px;padding:12px 14px;
+}
+.tl-card h4{color:#ffd36e;font-size:13.5px;margin-bottom:4px}
+.tl-card p{color:#c8bde8;font-size:12.5px;line-height:1.6}
+.tl-btns{display:flex;gap:6px;margin-top:8px}
+
+/* ============ 页面级弹窗 ============ */
+.modal-mask{
+  position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-mask.show{display:flex}
+.modal{
+  width:100%;max-width:420px;
+  background:linear-gradient(160deg,#1a2d47,#142236);
+  border:2px solid #4a89dc;border-radius:14px;padding:26px 24px;
+  box-shadow:0 14px 40px rgba(74,137,220,.3);
+}
+.modal h3{color:#f5efff;margin-bottom:12px;font-size:18px}
+.modal p{color:#c8bde8;font-size:13.5px;margin-bottom:16px;line-height:1.6}
+.modal input{
+  width:100%;padding:10px 14px;border-radius:8px;
+  border:1px solid #3d6ba0;background:rgba(255,255,255,.08);
+  color:#fff;font-size:15px;margin-bottom:16px;outline:none;
+}
+.modal input:focus{border-color:#4a89dc;box-shadow:0 0 0 3px rgba(74,137,220,.2)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+
+.big-modal{
+  width:100%;max-width:820px;max-height:82vh;overflow:auto;
+  background:linear-gradient(160deg,#1a2d47,#142236);
+  border:2px solid #4a89dc;border-radius:14px;padding:24px;
+}
+.big-modal h3{color:#f5efff;margin-bottom:14px;font-size:19px}
+
+/* ============ 结局画面 ============ */
+.ending-mask{
+  position:fixed;inset:0;z-index:600;background:#000;
+  display:none;align-items:center;justify-content:center;padding:20px;
+  animation:fadeIn 1.2s ease;
+}
+.ending-mask.show{display:flex}
+.ending-box{text-align:center;padding:30px;max-width:640px;animation:zoomIn .8s ease}
+.ending-tag{
+  display:inline-block;padding:6px 18px;border-radius:20px;
+  background:rgba(74,137,220,.2);color:#d7c7ff;font-size:13px;
+  margin-bottom:16px;border:1px solid #3d6ba0;
+}
+.ending-title{font-size:30px;color:#f5efff;margin-bottom:16px;letter-spacing:2px}
+.ending-text{color:#c8bde8;font-size:15px;line-height:2;margin-bottom:24px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes zoomIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ============ Toast ============ */
+.toast{
+  position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-80px);
+  z-index:999;padding:10px 24px;border-radius:24px;
+  background:linear-gradient(135deg,#1a2d47,#142236);
+  border:1.5px solid #4a89dc;color:#f5efff;font-size:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:0;transition:all .35s;
+  max-width:90%;text-align:center;cursor:pointer;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.sticky{
+  background:linear-gradient(135deg,#5b2a5c,#142236);
+  border-color:#ffd36e;
+  color:#fff6dd;
+  font-weight:600;
+  animation:toastPulse 1.8s ease-in-out infinite;
+}
+@keyframes toastPulse{
+  0%,100%{box-shadow:0 6px 20px rgba(0,0,0,.4),0 0 0 0 rgba(255,211,110,.35)}
+  50%    {box-shadow:0 6px 24px rgba(0,0,0,.45),0 0 0 8px rgba(255,211,110,0)}
+}
+
+/* ============ 介绍区 ============ */
+.intro-section{max-width:960px;margin:0 auto}
+.intro-grid{display:grid;grid-template-columns:200px 1fr;gap:24px}
+.intro-logo{text-align:center}
+.intro-logo img{width:90px;height:90px;border-radius:12px;border:2px solid #4a89dc;object-fit:cover;margin-bottom:8px}
+.intro-logo h2{font-size:18px;color:#f5efff;letter-spacing:1px}
+.intro-logo .sub{font-size:12px;color:#4a89dc;margin-top:4px}
+.intro-body h3{font-size:15px;color:#d7c7ff;margin:14px 0 8px}
+.intro-body p{color:#c8bde8;font-size:13.5px;line-height:1.8}
+.intro-body ul{list-style:none;padding-left:0}
+.intro-body li{color:#c8bde8;font-size:13px;line-height:1.9;padding-left:14px;position:relative}
+.intro-body li::before{content:'▸';color:#4a89dc;position:absolute;left:0}
+.tag{display:inline-block;padding:2px 10px;border-radius:10px;background:rgba(74,137,220,.2);color:#d7c7ff;font-size:12px;margin-right:6px;margin-top:6px}
+.bgm-credit{
+  margin-top:20px;text-align:center;color:#3d6ba0;font-size:11.5px;
+  padding:10px;border-top:1px solid #2a2440;
+}
+.section-title{
+  font-size:18px;font-weight:700;margin-bottom:14px;color:#d7c7ff;
+}
+
+/* ============ 线索放大弹窗（拾取后展示）——限定在 16:9 画布内 ============ */
+.clue-modal{
+  position:absolute;inset:0;z-index:80;background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center;padding:20px 24px;
+}
+.clue-modal.show{display:flex;animation:fadeIn .3s ease}
+.clue-modal-inner{
+  max-width:420px;width:100%;
+  background:linear-gradient(160deg,#1a2d47,#142236);
+  border:2px solid #4a89dc;border-radius:14px;overflow:hidden;
+  box-shadow:0 14px 40px rgba(74,137,220,.35);
+}
+.clue-modal-img{width:100%;max-height:40vh;max-height:320px;object-fit:cover;display:block;border-bottom:1px solid #2a4a7a}
+.clue-modal-body{padding:16px 18px 18px}
+.clue-modal-body h3{color:#ffd36e;font-size:17px;margin-bottom:8px}
+.clue-modal-body p{color:#c8bde8;font-size:13px;line-height:1.7;margin-bottom:14px}
+.clue-modal-body .pick-tip{color:#7fff7f;font-size:12px;margin-bottom:10px}
+
+/* ============ 画布内通用弹窗（如"推论成功"）——限定在 16:9 画布内居中 ============ */
+.canvas-modal-mask{
+  position:absolute;inset:0;z-index:85;background:rgba(0,0,0,.78);
+  display:none;align-items:center;justify-content:center;padding:18px;
+}
+.canvas-modal-mask.show{display:flex;animation:fadeIn .28s ease}
+.canvas-modal{
+  width:100%;max-width:440px;text-align:center;
+  background:linear-gradient(160deg,#1a2d47,#142236);
+  border:2px solid #4a89dc;border-radius:14px;padding:22px 20px;
+  box-shadow:0 14px 40px rgba(74,137,220,.32);
+}
+.canvas-modal h3{color:#f5efff;margin-bottom:10px;font-size:18px}
+/* ============ 文档类线索（CSS 渲染，文字与剧本一致） ============ */
+.clue-modal-doc{
+  width:100%;max-height:46vh;overflow:auto;padding:30px 28px 26px;
+  border-bottom:1px solid #2a4a7a;box-sizing:border-box;
+  font-family:"KaiTi","STKaiti","楷体",serif;color:#2a2418;
+  text-align:center;line-height:1.9;font-size:15px;
+}
+.clue-modal-doc .doc-header{font-size:22px;font-weight:700;letter-spacing:6px;margin-bottom:10px}
+.clue-modal-doc .doc-meta{font-size:12px;color:#6b5a3a;margin-bottom:16px}
+.clue-modal-doc .doc-body{font-size:15px;line-height:2;text-align:left;text-indent:2em;margin-bottom:14px}
+.clue-modal-doc .doc-sign{text-align:right;font-size:13px;color:#5b4a2e;margin-top:8px}
+/* 委托函：米白信纸 */
+.doc-note{background:linear-gradient(135deg,#f7f1e0,#efe6cf);box-shadow:inset 0 0 30px rgba(120,90,40,.12)}
+/* 日记：泛黄本子 */
+.doc-diary{background:linear-gradient(135deg,#f3ead0,#e8d9b0);box-shadow:inset 0 0 30px rgba(140,100,40,.15)}
+/* 遗嘱：正式米色 */
+.doc-will{background:linear-gradient(135deg,#f5eed8,#e9dcb8);border-top:3px solid #8a6d3b;box-shadow:inset 0 0 30px rgba(120,90,40,.1)}
+/* 威胁信：粗糙撕边感 */
+.doc-letter{background:linear-gradient(135deg,#ece0c0,#d8c89a);box-shadow:inset 0 0 30px rgba(80,60,30,.2);font-style:italic}
+.doc-letter .doc-body{text-indent:0;font-family:"KaiTi","STKaiti",serif;letter-spacing:1px}
+
+/* ============ 推论结论展示区 ============ */
+.ded-result{
+  margin-top:14px;padding:14px 16px;border-radius:10px;
+  background:rgba(74,137,220,.12);border:1px solid #4a89dc;
+  animation:zoomIn .4s ease;
+}
+.ded-result h4{color:#7fff7f;font-size:15px;margin-bottom:8px}
+.ded-result p{color:#e8e6f0;font-size:13.5px;line-height:1.7}
+.ded-result .progress{margin-top:8px;color:#4a89dc;font-size:12px}
+.ded-result.fail{background:rgba(226,123,123,.12);border-color:#e27b7b}
+.ded-result.fail h4{color:#ff9b9b}
+.ded-result.hint{background:rgba(255,211,110,.1);border-color:#ffd36e}
+.ded-result.hint h4{color:#ffd36e}
+.ded-result.hint ul{list-style:none;padding:0;margin:6px 0 0}
+.ded-result.hint li{margin:6px 0;color:#e8e6f0;font-size:12.5px;line-height:1.6}
+.ded-result.hint li b{color:#ffd36e}
+
+/* ============ 全屏剧情脉络图（XMind 风格） ============ */
+.branch-fullscreen{
+  position:fixed;inset:0;z-index:60;display:none;flex-direction:column;
+  background:radial-gradient(ellipse at center,#142236 0%,#091421 100%);
+}
+.branch-fullscreen.show{display:flex}
+.branch-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 24px;border-bottom:1px solid #1a2d47;
+  background:rgba(26,29,46,.9);backdrop-filter:blur(8px);
+}
+.branch-header h2{color:#ffd36e;font-size:20px;letter-spacing:2px}
+.branch-controls{display:flex;gap:8px}
+.branch-controls .btn{padding:6px 12px;font-size:13px}
+.branch-canvas{
+  flex:1;overflow:hidden;position:relative;
+  cursor:grab;user-select:none;
+}
+.branch-canvas:active{cursor:grabbing}
+.branch-canvas svg{
+  width:100%;height:100%;
+}
+.branch-node-group{cursor:pointer}
+.branch-node-group:hover .node-rect{stroke:#ffd36e;stroke-width:2.5}
+.node-rect{
+  fill:rgba(20,34,54,.92);stroke:#4a89dc;stroke-width:2;rx:12;ry:12;
+  filter:url(#glow);
+}
+.node-rect.start{fill:rgba(255,211,110,.15);stroke:#ffd36e}
+.node-rect.ending{fill:rgba(226,123,123,.12);stroke:#e27b7b}
+.node-rect.unvisited{fill:rgba(95,74,158,.2);stroke:#2a4a7a;stroke-dasharray:4,3}
+.node-rect.current{fill:rgba(127,255,127,.12);stroke:#7fff7f}
+.node-rect.ending.goodend{fill:rgba(127,255,127,.1);stroke:#7fff7f}
+.node-rect.ending.badend{fill:rgba(226,123,123,.12);stroke:#e27b7b}
+.node-rect.ending.norend{fill:rgba(255,211,110,.12);stroke:#ffd36e}
+.node-text-title{
+  fill:#f5efff;font-size:14px;font-weight:600;font-family:"Microsoft YaHei",sans-serif;
+}
+.node-text-choice{
+  fill:#ffd36e;font-size:12px;font-family:"Microsoft YaHei",sans-serif;
+}
+.node-text-info{
+  fill:#3d6ba0;font-size:11px;font-family:"Microsoft YaHei",sans-serif;
+}
+/* 当前节点脉冲光晕 */
+.node-pulse{
+  fill:none;stroke:#7fff7f;stroke-width:2;opacity:0;
+}
+.node-pulse.animate{animation:nodePulse 2s ease-out infinite}
+@keyframes nodePulse{
+  0%{transform:scale(1);opacity:.8}
+  100%{transform:scale(1.4);opacity:0}
+}
+.branch-legend{
+  position:absolute;bottom:16px;left:16px;display:flex;flex-wrap:wrap;gap:12px 16px;max-width:72%;
+  padding:8px 14px;background:rgba(26,29,46,.85);border-radius:14px;
+  border:1px solid #1a2d47;font-size:12px;color:#8ac0ff;
+  backdrop-filter:blur(6px);
+}
+.legend-dot{
+  display:inline-block;width:10px;height:10px;border-radius:50%;
+  margin-right:4px;vertical-align:middle;
+}
+.legend-line{
+  display:inline-block;width:22px;height:2px;vertical-align:middle;margin-right:5px;
+}
+.legend-line.line-current{background:#7fff7f;box-shadow:0 0 4px #7fff7f}
+.legend-line.line-history{background:#6b60a0}
+.legend-line.line-ending{background:#e27b7b}
+.legend-line.line-unvisited{
+  background:repeating-linear-gradient(90deg,#2a4a7a 0 5px,transparent 5px 9px);
+}
+/* 未探索开关 */
+.branch-unv-switch{
+  display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#8ac0ff;
+  padding:4px 10px;border:1px solid #1a2d47;border-radius:18px;background:rgba(26,29,46,.7);
+  cursor:pointer;user-select:none;
+}
+.branch-unv-switch input{accent-color:#ffd36e}
+/* 节点详情弹窗 */
+.branch-node-modal{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  z-index:8;pointer-events:none;
+}
+.branch-node-modal.show{display:flex;pointer-events:auto}
+.bnm-card{
+  width:min(520px, 86vw);
+  background:rgba(20,15,40,.96);border:1px solid #4a89dc;border-radius:16px;
+  padding:22px 24px 18px;color:#e9e4ff;
+  box-shadow:0 18px 60px rgba(0,0,0,.5),0 0 0 4px rgba(74,137,220,.08);
+  backdrop-filter:blur(8px);
+}
+.bnm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+.bnm-title{font-size:17px;font-weight:700;color:#ffd36e;letter-spacing:1px}
+.bnm-scene{font-size:12.5px;color:#3d6ba0;margin-top:4px}
+.bnm-close{
+  background:rgba(74,137,220,.14);color:#8ac0ff;border:1px solid #1a2d47;
+  width:30px;height:30px;border-radius:50%;cursor:pointer;flex-shrink:0;
+}
+.bnm-body{background:rgba(20,34,54,.5);border-radius:10px;padding:12px 14px;margin-bottom:12px;line-height:1.7}
+.bnm-body .label{color:#3d6ba0;font-size:12px;margin-bottom:4px}
+.bnm-body .value{color:#f5efff;font-size:14px}
+.bnm-body .row{margin-bottom:8px}
+.bnm-body .row:last-child{margin-bottom:0}
+.bnm-effects{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.bnm-effect-tag{
+  padding:3px 10px;border-radius:14px;font-size:12px;background:rgba(74,137,220,.12);
+  border:1px solid #1a2d47;color:#d7c8ff;
+}
+.bnm-footer{display:flex;justify-content:flex-end;gap:10px}
+.bnm-footer .btn.primary{background:linear-gradient(180deg,#ffd36e,#e9b33b);color:#3a2500;border-color:#d4a63b}
+.branch-empty{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;pointer-events:none;
+  color:#3d6ba0;
+}
+
+/* ============ 画布内封面 ============ */
+.canvas-cover{
+  position:absolute;inset:0;z-index:50;display:none;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+  background:linear-gradient(180deg,rgba(26,29,46,.85) 0%,rgba(15,11,30,.95) 100%);
+  backdrop-filter:blur(6px);
+}
+.canvas-cover.show{display:flex}
+.cc-overlay{
+  position:absolute;inset:0;
+  background:url('assets/backgrounds/bg01_mansion_outside.jpg') center/cover no-repeat;
+  opacity:.12;
+}
+.cc-content{position:relative;z-index:1;padding:20px;max-width:360px}
+.cc-logo{
+  width:80px;height:80px;border-radius:12px;border:2px solid #4a89dc;
+  box-shadow:0 6px 20px rgba(74,137,220,.4);margin-bottom:10px;
+}
+.cc-title{font-size:24px;font-weight:800;color:#f5efff;letter-spacing:2px;margin-bottom:4px}
+.cc-subtitle{font-size:13px;color:#8ac0ff;margin-bottom:14px}
+.cc-menu{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;min-width:320px;width:320px;margin-left:auto;margin-right:auto}
+.cc-menu .btn{padding:10px 20px;font-size:14px;border-radius:10px;width:100%;box-sizing:border-box}
+.cc-progress{color:#3d6ba0;font-size:11.5px;margin-top:6px}
+
+/* 画布内雨效 */
+.game-rain{
+  position:absolute;inset:0;z-index:15;pointer-events:none;overflow:hidden;display:none;
+}
+.game-rain.show{display:block}
+
+/* ============ 响应式 ============ */
+@media (max-width:860px){
+  .cover-title{font-size:28px}
+  .cover-menu{width:200px}
+  .cover-menu .btn{font-size:14px;padding:11px 16px}
+  .char-cards{flex-direction:column;align-items:center}
+  .char-card{max-width:340px;width:100%}
+  .intro-grid{grid-template-columns:1fr}
+  .intro-logo{display:flex;align-items:center;gap:12px;justify-content:center}
+  .intro-logo img{width:60px;height:60px}
+  .choices{width:92%;top:10%}
+  .dialogue-text{font-size:13.5px}
+  .speaker{font-size:13px}
+  .stats-bar{flex-wrap:wrap;gap:4px;font-size:12px}
+  .clue-list{grid-template-columns:1fr}
+  .canvas-tools button{width:34px;height:34px;font-size:14px}
+}
+
+/* ============ 能力图鉴（典藏版小卡 + 六边形雷达图） ============ */
+.ability-overlay{
+  position:absolute;inset:0;z-index:58;
+  background:linear-gradient(135deg,rgba(26,29,46,.96),rgba(20,34,54,.96));
+  backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;gap:24px;
+  padding:18px;box-sizing:border-box;
+}
+.ability-overlay.ability-fixed{
+  position:fixed;inset:0;z-index:9999;
+}
+.ability-left{
+  flex:0 0 42%;height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;
+}
+/* 典藏版小卡：blingbling 闪光边框 + 镭射背景 + 旋转光泽 */
+.ability-card{
+  position:relative;width:min(100%,300px);aspect-ratio:3/4;
+  border-radius:16px;padding:4px;
+  background:linear-gradient(135deg,#ffd36e 0%,#ff8fb2 25%,#8be9fd 50%,#c792ea 75%,#a6e22e 100%);
+  background-size:300% 300%;
+  animation:abilityHoloShift 6s ease infinite;
+  box-shadow:0 0 24px rgba(255,211,110,.5),0 8px 28px rgba(0,0,0,.5);
+}
+.ability-card::before{
+  content:'';position:absolute;inset:-2px;border-radius:18px;z-index:-1;
+  background:linear-gradient(45deg,#ffd36e,#ff8fb2,#8be9fd,#c792ea,#a6e22e,#ffd36e);
+  background-size:400% 400%;animation:abilityHoloShift 4s linear infinite;
+  filter:blur(8px);opacity:.8;
+}
+.ability-card-inner{
+  position:relative;width:100%;height:100%;border-radius:13px;overflow:hidden;
+  background:#1a1d2e;
+}
+.ability-portrait{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
+/* 卡面镭射光泽扫过动画 */
+.ability-card-inner::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);
+  background-size:300% 100%;animation:abilityShine 3.5s ease-in-out infinite;
+  pointer-events:none;mix-blend-mode:overlay;
+}
+/* 闪光星点 */
+.ability-card-inner::before{
+  content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 20% 30%,#fff 1px,transparent 2px),
+    radial-gradient(circle at 70% 60%,#fff 1px,transparent 2px),
+    radial-gradient(circle at 45% 80%,#fff 1px,transparent 2px),
+    radial-gradient(circle at 85% 25%,#fff 1px,transparent 2px);
+  background-size:200% 200%;animation:abilitySparkle 5s linear infinite;
+  opacity:.6;
+}
+.ability-card-label{
+  position:absolute;left:0;right:0;bottom:0;z-index:3;
+  padding:14px 12px 10px;text-align:center;
+  background:linear-gradient(transparent,rgba(0,0,0,.85));
+}
+.ability-name{
+  font-size:18px;color:#ffd36e;letter-spacing:2px;font-weight:700;
+  text-shadow:0 1px 6px rgba(0,0,0,.8),0 0 12px rgba(255,211,110,.6);
+}
+.ability-role{font-size:11px;color:#f5efff;letter-spacing:1px;margin-top:2px;opacity:.9}
+.ability-card-rank{
+  position:absolute;top:8px;left:8px;z-index:3;
+  padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;
+  background:linear-gradient(135deg,#ffd36e,#ff8fb2);color:#1a1d2e;letter-spacing:1px;
+}
+@keyframes abilityHoloShift{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+@keyframes abilityShine{
+  0%{background-position:200% 0}
+  100%{background-position:-100% 0}
+}
+@keyframes abilitySparkle{
+  0%{background-position:0% 0}
+  100%{background-position:100% 100%}
+}
+.ability-right{
+  flex:1 1 auto;height:100%;display:flex;flex-direction:column;
+  align-items:center;gap:10px;padding:8px;
+  overflow:hidden;
+}
+.ability-hex{flex:0 0 260px;width:min(100%,320px);height:260px}
+.ability-legend{
+  flex:0 0 auto;
+  display:grid;grid-template-columns:repeat(3,minmax(110px,1fr));gap:6px;
+  width:100%;max-width:420px;
+}
+.ability-leg-item{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;border-radius:10px;
+  background:rgba(95,74,158,.35);border:1px solid #2a4a7a;
+  font-size:13px;color:#f5efff;
+  cursor:pointer;transition:border-color .15s,background .15s;
+}
+.ability-leg-item:hover{border-color:#ffd36e;background:rgba(95,74,158,.55)}
+.ability-leg-dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px}
+.ability-leg-val{margin-left:auto;font-weight:bold;color:#ffd36e}
+/* 能力图鉴数值明细弹窗 */
+.stat-log-modal{
+  position:absolute;inset:0;z-index:60;
+  background:rgba(10,10,20,.88);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.stat-log-box{
+  background:linear-gradient(135deg,rgba(26,29,46,.98),rgba(20,34,54,.98));
+  border:1px solid #2a4a7a;border-radius:14px;
+  max-width:440px;width:100%;max-height:80%;overflow-y:auto;
+  padding:20px 22px;
+}
+.stat-log-box h4{margin:0 0 4px;font-size:16px}
+.stat-log-box .stat-log-total{color:#4a89dc;font-size:13px;margin-bottom:12px}
+.stat-log-box .stat-log-row{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  padding:7px 0;border-bottom:1px solid rgba(95,74,158,.3);font-size:12.5px;line-height:1.5;
+}
+.stat-log-row .reason{color:#d0c8f0;flex:1}
+.stat-log-row .amount{font-weight:bold;white-space:nowrap}
+.stat-log-row .amount.pos{color:#7fd8a0}
+.stat-log-row .amount.neg{color:#ff6b6b}
+.ability-close{position:absolute;top:14px;right:18px}
+.ability-hint{flex:0 0 auto;font-size:12px;color:#3d6ba0;text-align:center}
+.ability-titles{flex:1 1 auto;min-height:0;overflow-y:auto;margin-top:4px;display:flex;flex-direction:column;gap:6px;padding-right:4px}
+/* 称号列表滚动条细一点 */
+.ability-titles::-webkit-scrollbar{width:4px}
+.ability-titles::-webkit-scrollbar-thumb{background:rgba(74,137,220,.4);border-radius:2px}
+.ability-title-item{padding:6px 10px;background:rgba(20,34,54,.6);border:1px solid rgba(74,137,220,.4);border-radius:8px;font-size:12px;line-height:1.5}
+.ability-title-name{font-weight:700;font-size:13px;letter-spacing:1px}
+.ability-title-text{color:#d0c8f0;margin-left:4px}
+/* 封面能力图鉴按钮：普通风格，不加特效 */
+@media (max-width:760px){
+  .ability-overlay{flex-direction:column;gap:10px;overflow-y:auto}
+  .ability-left{flex:0 0 auto;height:auto}
+  .ability-card{width:180px;aspect-ratio:3/4}
+  .ability-right{flex:1 1 auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 封面屏（已废弃，仅作为雨效BGM容器） ============ -->
+<div class="screen cover-screen hidden" id="coverScreen">
+  <div class="cover-overlay"></div>
+  <div class="cover-rain" id="coverRain"></div>
+  <div class="cover-content">
+    <img class="cover-logo" src="assets/logo/game_logo.jpg" alt="LOGO">
+    <h1 class="cover-title">暴雨孤岛</h1>
+    <div class="cover-subtitle">Storm Isle · 暴雨封岛 · 孤宅凶夜</div>
+    <div class="cover-menu">
+      <button class="btn primary" onclick="startNewGame()">🎬 新游戏</button>
+      <button class="btn" onclick="openBranchDiagram()">📊 剧情脉络</button>
+      <button class="btn" onclick="openAbilityChart()">🎯 能力图鉴</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 人物图鉴屏 ============ -->
+<div class="screen char-screen hidden" id="charScreen">
+  <div class="char-header">
+    <button class="btn" onclick="showScreen('cover')">← 返回封面</button>
+    <h2>主线人物</h2>
+  </div>
+  <div class="char-cards" id="charCards"></div>
+</div>
+
+<!-- ============ 游戏屏 ============ -->
+<div class="screen game-screen hidden" id="gameScreen">
+  <div class="game-wrap">
+    <div class="game-canvas">
+      <div class="game-inner" id="gameInner">
+        <!-- 画布内封面（从游戏返回时显示） -->
+        <div class="canvas-cover" id="canvasCover">
+          <div class="cc-overlay"></div>
+          <div class="cc-content">
+            <img class="cc-logo" src="assets/logo/game_logo.jpg" alt="LOGO">
+            <h1 class="cc-title">暴雨孤岛</h1>
+            <div class="cc-subtitle">暴雨封岛 · 孤宅凶夜</div>
+            <div class="cc-menu">
+              <button class="btn primary" onclick="resumeGame()">▶ 继续游戏</button>
+              <button class="btn" onclick="startNewGame()">🎬 新游戏</button>
+              <button class="btn" onclick="openBranchDiagram()">📊 剧情脉络</button>
+              <button class="btn" onclick="openAbilityChart()">🎯 能力图鉴</button>
+            </div>
+            <div class="cc-progress" id="ccProgress"></div>
+          </div>
+        </div>
+
+        <img class="bg-img" id="bgImg" src="assets/backgrounds/bg01_mansion_outside.jpg" alt="场景">
+        <div class="bg-overlay" id="bgOverlay"></div>
+        <img class="char-center" id="charCenter" src="assets/characters/heroine_main.png" alt="角色">
+        <div class="char-group" id="charGroup"></div>
+        <div class="rain-layer" id="rainLayer"></div>
+        <div class="glow-flash" id="glowFlash"></div>
+        <div id="hotspots"></div>
+        <div class="choices" id="choices"></div>
+
+        <div class="canvas-tools">
+          <button title="背包" onclick="openInventory()">🎒</button>
+          <button title="推论" onclick="openDeduction()">🧩</button>
+          <button title="数值面板" onclick="toggleStats()">📊</button>
+          <button title="回到首页" onclick="returnToCover()">🏠</button>
+        </div>
+
+        <div class="stats-bar" id="statsBar">
+          <div class="stat-item" data-stat="lu"><span class="stat-label">🔍</span><span class="stat-value" id="sLu">0</span></div>
+          <div class="stat-item" data-stat="shen"><span class="stat-label">💬</span><span class="stat-value" id="sShen">0</span></div>
+          <div class="stat-item" data-stat="ded"><span class="stat-label">🧠</span><span class="stat-value" id="sDed">0</span></div>
+          <div class="stat-item" data-stat="obs"><span class="stat-label">👁</span><span class="stat-value" id="sObs">0</span></div>
+          <div class="stat-item" data-stat="int"><span class="stat-label">⚡</span><span class="stat-value" id="sInt">0</span></div>
+          <div class="stat-item" data-stat="cou"><span class="stat-label">🛡</span><span class="stat-value" id="sCou">0</span></div>
+          <div class="stat-detail" id="statDetail"></div>
+        </div>
+
+        <div class="dialogue-box" id="dialogueBox">
+          <span class="speaker" id="speaker">系统</span>
+          <div class="dialogue-text done" id="dialogueText">点击【新游戏】开始你的悬疑冒险……</div>
+        </div>
+
+        <!-- 画布内雨效 -->
+        <div class="game-rain" id="gameRain"></div>
+
+        <!-- 画布内：线索背包 -->
+        <div class="canvas-panel" id="invPanel">
+          <div class="cp-inner">
+            <div class="cp-head">
+              <h3>🎒 线索背包</h3>
+              <button class="cp-close" onclick="closeMask('invPanel')">✕</button>
+            </div>
+            <div class="hint" id="invHint">共收集到 0 条线索</div>
+            <div class="grid-cards" id="invGrid"></div>
+          </div>
+        </div>
+
+        <!-- 画布内：推论合成 -->
+        <div class="canvas-panel" id="dedPanel">
+          <div class="cp-inner">
+            <div class="cp-head">
+              <h3>🧩 推论合成</h3>
+              <button class="cp-close" onclick="closeMask('dedPanel')">✕</button>
+            </div>
+            <div class="hint">已推论 <b id="dedDoneCount">0</b> / <b id="dedTotalCount">5</b> 条 · 已选 <span id="dedCount">0</span>/5 · 失败 <span id="dedFailCount">0</span> 次 <button class="btn" id="dedHintBtn" onclick="showDedHint()" style="display:none;margin-left:8px;padding:3px 10px;font-size:12px">💡 查看提示</button></div>
+            <div class="slot-row" id="slotRow" style="flex-wrap:wrap;justify-content:center">
+              <div class="slot" id="slot0">槽位 1</div>
+              <div class="slot plus">+</div>
+              <div class="slot" id="slot1">槽位 2</div>
+              <div class="slot plus">+</div>
+              <div class="slot" id="slot2">槽位 3</div>
+              <div class="slot plus">+</div>
+              <div class="slot" id="slot3">槽位 4</div>
+              <div class="slot plus">+</div>
+              <div class="slot" id="slot4">槽位 5</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+              <button class="btn primary" onclick="doDeduce()">💡 开始推理</button>
+              <button class="btn" onclick="clearSlots()">清空槽位</button>
+              <button class="btn danger" id="giveUpBtn" onclick="giveUpDeduction()" style="display:none">😔 放弃推理</button>
+            </div>
+            <div id="dedTaskHint" style="color:#4a89dc;font-size:12px;margin-bottom:10px"></div>
+            <h4 style="color:#d7c7ff;font-size:13.5px;margin-bottom:8px">🔎 可用线索：</h4>
+            <div class="clue-list" id="clueList"></div>
+            <h4 style="color:#7fd8a0;font-size:13.5px;margin:14px 0 8px">✅ 已合成推论：</h4>
+            <div class="ded-done-list" id="dedDoneList"></div>
+            <div id="dedResult"></div>
+          </div>
+        </div>
+
+        <!-- 画布内：时间线排序 -->
+        <div class="canvas-panel" id="tlPanel">
+          <div class="cp-inner">
+            <div class="cp-head">
+              <h3>⏱ 时间线还原</h3>
+              <button class="cp-close" onclick="closeMask('tlPanel')">✕</button>
+            </div>
+            <div class="hint">将下方证词按"发生先后"正确排序。<span style="color:#3d6ba0;margin-left:6px">（时间已隐藏，需要时点"查看提示"）</span></div>
+            <div class="tl-cards" id="tlCards"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn primary" onclick="checkTimeline()">✅ 确认顺序</button>
+              <button class="btn" id="tlHintBtn" onclick="tlShowHint()">👁 查看提示</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 画布内：线索放大弹窗 -->
+        <div class="clue-modal" id="clueModal">
+          <div class="clue-modal-inner">
+            <img class="clue-modal-img" id="clueModalImg" src="" alt="线索">
+            <div class="clue-modal-doc" id="clueModalDoc" style="display:none"></div>
+            <div class="clue-modal-body">
+              <div class="pick-tip" id="clueModalTip">✓ 已收入背包</div>
+              <h3 id="clueModalName"></h3>
+              <p id="clueModalDesc"></p>
+              <button class="btn primary" onclick="closeMask('clueModal')">收起</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 画布内：推论成功弹窗（16:9画布内居中，相对整页不再溢出） -->
+        <div class="canvas-modal-mask" id="dedResultCanvasModal">
+          <div class="canvas-modal">
+            <div style="font-size:38px;margin-bottom:6px">🧠</div>
+            <h3 style="color:#ffd36e;font-size:21px;margin-bottom:4px">推论成功</h3>
+            <div id="dedRTitle" style="color:#8ac0ff;font-size:14px;margin-bottom:12px">—</div>
+            <div style="padding:12px 14px;background:rgba(74,137,220,.1);border-radius:10px;border:1px solid #2a4a7a;margin-bottom:12px;text-align:left">
+              <div id="dedRDesc" style="color:#f5efff;font-size:13.5px;line-height:1.7">—</div>
+            </div>
+            <div id="dedRReward" style="display:flex;gap:14px;justify-content:center;margin-bottom:10px;flex-wrap:wrap;font-size:13px"></div>
+            <div id="dedRProgress" style="color:#4a89dc;font-size:12px;margin-bottom:14px">已推论 0 / 0 条</div>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+              <button class="btn primary" onclick="continueAfterDed()">▶ 剧情推进</button>
+              <button class="btn" onclick="closeMask('dedResultCanvasModal')">✕ 关闭</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 推论失败提示弹窗（失败6次后点击「查看提示」弹出） -->
+        <div class="canvas-modal-mask" id="dedHintModal">
+          <div class="canvas-modal" style="max-width:520px">
+            <div style="font-size:34px;margin-bottom:6px">💡</div>
+            <h3 style="color:#ffd36e;font-size:20px;margin-bottom:10px">推论提示</h3>
+            <div id="dedHintBody" style="padding:12px 14px;background:rgba(74,137,220,.1);border-radius:10px;border:1px solid #2a4a7a;margin-bottom:12px;text-align:left;max-height:300px;overflow:auto"></div>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+              <button class="btn" onclick="closeMask('dedHintModal')">✕ 关闭</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 作品介绍模块 ============ -->
+  <div class="cover-info">
+    <div class="ci-wrap">
+      <div class="ci-head">
+        <div class="ci-head-left">
+          <h2 class="ci-title">暴雨孤岛</h2>
+          <div class="ci-tags">
+            <span class="ci-tag ci-tag-main">推理悬疑</span>
+            <span class="ci-tag">多结局</span>
+            <span class="ci-tag">互动搜证</span>
+            <span class="ci-tag">法庭辩论</span>
+            <span class="ci-tag">约 15 分钟</span>
+          </div>
+        </div>
+        <div class="ci-head-right">
+          <div class="ci-stats">
+            <div class="ci-stat-card">
+              <div class="ci-stat-num" id="ciPlayed">0</div>
+              <div class="ci-stat-label">累计游玩</div>
+            </div>
+            <div class="ci-stat-card">
+              <div class="ci-stat-num ci-num-yellow" id="ciRatingNum">9.0</div>
+              <div class="ci-stat-label ci-rating-label">基于 73 人评价</div>
+              <div class="ci-rating-stars">
+                <span class="ci-rating-star" data-value="1">★</span>
+                <span class="ci-rating-star" data-value="2">★</span>
+                <span class="ci-rating-star" data-value="3">★</span>
+                <span class="ci-rating-star" data-value="4">★</span>
+                <span class="ci-rating-star" data-value="5">★</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ci-tabs">
+        <button class="ci-tab active" data-tab="about">关于</button>
+        <button class="ci-tab" data-tab="chars">角色</button>
+        <button class="ci-tab" data-tab="endings">结局</button>
+       
+      </div>
+
+      <div class="ci-tab-body">
+        <div class="ci-tab-pane active" id="ci-tab-about">
+          <p><b>暴雨孤岛</b>是一款RPG推理游戏。你作为推理社新人，受富商陈老板之邀登岛，见证其亡妻茉莉女士的遗嘱宣读与封笔大典。然而，暴雨封岛、众人被困老宅，一桩尘封的命案在午夜骤发——</p>
+          <p>你将遍历书房、客厅、阁楼等场景搜证，盘问每一位嫌疑人，拼凑时间线，亲手合成推论，最终指认真凶。你的每一次选择，都可能揭开不同的真相。</p>
+          <h3 style="color:#f5efff;font-size:14px;margin:12px 0 6px">🎮 玩法说明</h3>
+          <ul style="color:#8ac0ff;font-size:12.5px;line-height:1.7;padding-left:18px">
+            <li><b style="color:#f5efff">🔍 放大镜搜证：</b>场景中会出现闪烁的热点，点击找到关键线索并收入背包。</li>
+            <li><b style="color:#f5efff">🧩 推论合成：</b>选择 2~5 条线索进行组合推理，正确组合可解锁关键结论。</li>
+            <li><b style="color:#f5efff">⚖ 盘问嫌疑人：</b>盘问四个嫌疑人，每个选项带对方回应，需在对话中识破谎言。</li>
+            <li><b style="color:#f5efff">⏱ 时间线还原：</b>后期需要将证词按发生顺序正确排列，还原案发经过。</li>
+            <li><b style="color:#f5efff">📋 关键选择：</b>对话选项影响数值与结局走向，共 5 种结局。</li>
+          </ul>
+          <div class="ci-features">
+            <div class="ci-feature">🔍 <b>21 条线索</b>遍布 6 个场景</div>
+            <div class="ci-feature">🧩 <b>8 条推论</b>层层递进</div>
+            <div class="ci-feature">🎭 <b>8 位人物</b>各怀心事</div>
+            <div class="ci-feature">🏁 <b>5 种结局</b>等你解锁</div>
+          </div>
+        </div>
+        <div class="ci-tab-pane" id="ci-tab-endings"></div>
+        <div class="ci-tab-pane" id="ci-tab-chars"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 页面级弹窗 ============ -->
+<!-- 自定义姓名 -->
+<div class="modal-mask" id="nameModal">
+  <div class="modal">
+    <h3>✨ 请为自己命名</h3>
+    <p>作为推理社新成员，请输入你的名字（1~5字，留空则使用默认「林小鹿」）</p>
+    <input id="nameInput" maxlength="5" placeholder="请输入 1~5 字的名字" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn primary" onclick="confirmName()">✅ 确认并开始</button>
+    </div>
+  </div>
+</div>
+
+<!-- 结局画面 -->
+<div class="ending-mask" id="endingMask">
+  <div class="ending-box">
+    <div class="ending-tag" id="endTag">END</div>
+    <h1 class="ending-title" id="endTitle">结局标题</h1>
+    <div class="ending-text" id="endText">结局内容……</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn primary" onclick="closeMask('endingMask');openAbilityChart()">📊 查看能力图鉴</button>
+    </div>
+  </div>
+</div>
+
+<!-- 全屏剧情脉络图（XMind 风格） -->
+<div class="branch-fullscreen" id="branchFullscreen">
+  <div class="branch-header">
+    <h2>📊 剧情脉络图</h2>
+    <div class="branch-controls">
+      <button class="btn" onclick="branchZoom(1.25)">➕ 放大</button>
+      <button class="btn" onclick="branchZoom(0.8)">➖ 缩小</button>
+      <button class="btn" onclick="fitBranchView()">🎯 适配</button>
+      <button class="btn primary" onclick="closeBranchFullscreen()">✕ 关闭</button>
+    </div>
+  </div>
+  <div class="branch-canvas" id="branchCanvas">
+    <svg id="branchSvg" width="3000" height="2000" viewBox="0 0 3000 2000">
+      <defs>
+        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#4a89dc;stop-opacity:0.8"/>
+          <stop offset="100%" style="stop-color:#ffd36e;stop-opacity:0.8"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Lines will be drawn here -->
+      <g id="branchLines"></g>
+      <!-- Nodes will be drawn here -->
+      <g id="branchNodes"></g>
+    </svg>
+    <div class="branch-legend">
+      <span><span class="legend-line line-current"></span> 当前路径</span>
+      <span><span class="legend-line line-history"></span> 历史/其他分支</span>
+      <span><span class="legend-line line-ending"></span> 结局边</span>
+      <span><span class="legend-line line-unvisited"></span> 未探索</span>
+      <span><span class="legend-dot" style="background:#ffd36e"></span> 起点</span>
+      <span><span class="legend-dot" style="background:#7fff7f"></span> 当前位置</span>
+      <span><span class="legend-dot" style="background:#e27b7b"></span> BAD END</span>
+      <span><span class="legend-dot" style="background:#7fff7f"></span> GOOD END</span>
+      <span><span class="legend-dot" style="background:#ffd36e"></span> NORMAL END</span>
+    </div>
+    <div class="branch-empty" id="branchEmpty" style="display:none">
+      <div style="font-size:48px;margin-bottom:16px">🗺️</div>
+      <div style="font-size:18px;color:#8ac0ff;margin-bottom:8px">剧情脉络</div>
+      <div style="color:#3d6ba0;font-size:13px">所有节点已预置，探索过的显示真实选项，未走过的以 ??? 占位。<br>点击节点可查看详情，滚轮缩放、拖拽平移。</div>
+    </div>
+    <!-- 节点详情弹窗（防误触：先显示完整文本，再回跳） -->
+    <div class="branch-node-modal" id="branchNodeModal">
+      <div class="bnm-card">
+        <div class="bnm-head">
+          <div>
+            <div class="bnm-title" id="bnmTitle">—</div>
+            <div class="bnm-scene" id="bnmScene">—</div>
+          </div>
+          <button class="bnm-close" onclick="closeNodeModal()" title="关闭">✕</button>
+        </div>
+        <div class="bnm-body">
+          <div class="row">
+            <div class="label">你当时的选择：</div>
+            <div class="value" id="bnmChoice">—</div>
+          </div>
+          <div class="row">
+            <div class="label">选择产生的效果：</div>
+            <div class="bnm-effects" id="bnmEffects"></div>
+          </div>
+          <div class="row">
+            <div class="label">跳转到的场景：</div>
+            <div class="value" id="bnmResult" style="color:#a6e6ff">—</div>
+          </div>
+        </div>
+        <div class="bnm-footer">
+          <button class="btn" onclick="closeNodeModal()">取消</button>
+          <button class="btn primary" id="bnmJumpBtn" onclick="confirmNodeModalJump()">↺ 从这个选择重新开始</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- BGM -->
+<audio id="bgmAudio" loop></audio>
+
+<!-- ============ 数据文件 ============ -->
+<script src="game-script.js"></script>
+<script>
+/* =========================================================
+   全局状态
+   ========================================================= */
+const SAVE_KEY = 'stormIsleSave_v1';
+const GALLERY_KEY = 'stormIsleGallery_v1';
+// 脉络探索记录：{nodeId: 访问次数}，默认 0；>0 则脉络树展示真实选项/数值，否则灰色???
+const EXPLORED_KEY = 'stormIsle_explored_v1';
+function loadExplored(){
+  try{ return JSON.parse(localStorage.getItem(EXPLORED_KEY) || '{}'); }
+  catch(e){ return {}; }
+}
+function markExplored(nodeId){
+  const ex = loadExplored();
+  ex[nodeId] = (ex[nodeId] || 0) + 1;
+  try{ localStorage.setItem(EXPLORED_KEY, JSON.stringify(ex)); }catch(e){}
+}
+function isExplored(nodeId){
+  const ex = loadExplored();
+  return (ex[nodeId] || 0) > 0;
+}
+
+let state = {
+  heroine: '林小鹿',
+  nodeId: 'start',
+  // 6 项能力：推理力 lu / 共情力 shen / 洞察力 ded / 观察力 obs / 直觉 int / 勇气 cou
+  // 前 3 项为剧本主线数值，后 3 项可在剧本 eff 中通过 obs/int/cou 字段中途触发提升
+  stats: { lu:0, shen:0, ded:0, obs:0, int:0, cou:0 },
+  statLog: { lu:[], shen:[], ded:[], obs:[], int:[], cou:[] },
+  clues: [],
+  deduced: [],
+  flags: {},
+  dedFailCount: 0,
+  giveUpCount: 0, // 放弃推理累计次数，>=3 触发结局5
+  // 分支脉络追踪
+  branchLog: [], // [{nodeId, choiceText, resultNode, effect, snapshot}]
+  branchSnapshots: {}, // {nodeId: state_snapshot}
+  // 盘问记录（用于二次盘问环节判断玩家问过什么）
+  questionLog: [],
+};
+
+/* =========================================================
+   工具函数
+   ========================================================= */
+function $(id){ return document.getElementById(id); }
+
+function toast(msg, ms=2300){
+  const t = $('toast');
+  // ms=0 或关键提示（证据不足/推论失败/时间线错误等）改为"点击画布才关闭"，避免玩家来不及看完
+  const forceManual = ms === 0 ||
+    msg.includes('证据不足') || msg.includes('线索不足') ||
+    msg.includes('没有关联')   || msg.includes('顺序有') ||
+    msg.includes('失败……')   || msg.includes('顺序错误');
+  const closeHint = forceManual ? ' <small style="opacity:.7;margin-left:10px">📌 </small>' : '';
+  t.innerHTML = msg + closeHint;
+  t.classList.add('show');
+  if(forceManual){
+    t.classList.add('sticky');
+  } else {
+    t.classList.remove('sticky');
+  }
+  clearTimeout(window.__toastTimer);
+  if(!forceManual){
+    window.__toastTimer = setTimeout(()=>t.classList.remove('show'), ms);
+  }
+  if(msg.includes('获得线索')) sfxClue();
+  else if(msg.includes('成功')||msg.includes('推论')||msg.includes('达成')) sfxGood();
+  else if(msg.includes('错误')||msg.includes('没有关联')||msg.includes('有误')||msg.includes('顺序有')) sfxBad();
+}
+function closeMask(id){ $(id).classList.remove('show'); }
+
+/* =========================================================
+   屏幕导航
+   ========================================================= */
+function showScreen(screen){
+  // 始终显示 gameScreen（16:9画幅+作品介绍）
+  $('gameScreen').classList.remove('hidden');
+  // 其他全屏屏隐藏
+  ['coverScreen','charScreen'].forEach(id => $(id).classList.add('hidden'));
+  if(screen === 'cover'){
+    $('canvasCover').classList.add('show');
+    startRain($('coverRain'));
+    playBgm('cover');
+    // 统一刷新"继续游戏"按钮显隐：有存档才显示（结局后存档已被 showEnding 删除）
+    const hasSave = !!localStorage.getItem(SAVE_KEY);
+    const resumeBtn = document.querySelector('.cc-menu .btn.primary');
+    if(resumeBtn){ resumeBtn.style.display = hasSave ? '' : 'none'; }
+  } else if(screen === 'char'){
+    $('canvasCover').classList.remove('show');
+    // 在游戏屏内显示人物图鉴（用overlay）
+    showCharOverlay();
+  } else {
+    $('canvasCover').classList.remove('show');
+    $('coverRain').classList.remove('show');
+  }
+}
+
+function showCharOverlay(){
+  // 人物图鉴覆盖在游戏屏16:9画幅内
+  const overlay = $('charOverlay');
+  if(!overlay){
+    // 创建人物overlay在game-canvas内
+    const cvs = document.querySelector('.game-canvas');
+    const ov = document.createElement('div');
+    ov.id = 'charOverlay';
+    ov.style.cssText = 'position:absolute;inset:0;z-index:55;background:rgba(26,29,46,.94);backdrop-filter:blur(8px);display:flex;flex-direction:column;padding:16px;overflow-y:auto';
+    ov.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="color:#d7c7ff;font-size:18px;letter-spacing:2px">👥 主线人物</h2>
+        <button class="btn primary" onclick="closeCharOverlay()">✕ 关闭</button>
+      </div>
+      <div class="char-cards" id="charCardsOverlay" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"></div>
+    `;
+    cvs.appendChild(ov);
+    renderCharGallery('charCardsOverlay');
+  }
+  $('charOverlay').style.display = 'flex';
+}
+function closeCharOverlay(){
+  const ov = $('charOverlay');
+  if(ov) ov.style.display = 'none';
+}
+
+/* =========================================================
+   能力图鉴（女主立绘 + 六边形能力雷达图）
+   初始所有能力为 0，随剧本 eff.lu/shen/ded/obs/int/cou 累加展开
+   ========================================================= */
+const ABILITY_DEFS = [
+  { key:'lu',  name:'推理力', color:'#ffd36e' },
+  { key:'shen',name:'共情力', color:'#ff8fb2' },
+  { key:'ded', name:'洞察力', color:'#8be9fd' },
+  { key:'obs', name:'观察力', color:'#a6e22e' },
+  { key:'int', name:'直觉',   color:'#c792ea' },
+  { key:'cou', name:'勇气',   color:'#ff9e64' },
+];
+// 标记能力图鉴是否从结局画面打开：关闭时需自动回首页，避免玩家卡在游戏场景
+let abilityFromEnding = false;
+function openAbilityChart(){
+  // 在 16:9 画布内显示能力图鉴（保持画幅，不放大）
+  // 若当前处于结局节点，标记"从结局打开"——关闭后自动回首页封面
+  const curNode = SCRIPT[state.nodeId];
+  abilityFromEnding = !!(curNode && curNode.end);
+  let ov = $('abilityOverlay');
+  if(ov){ ov.style.display = 'flex'; renderAbilityHex(); return; }
+  // 挂到 16:9 画布容器（封面/游戏内通用）
+  let host = document.querySelector('.game-canvas') || document.body;
+  ov = document.createElement('div');
+  ov.id = 'abilityOverlay';
+  ov.className = 'ability-overlay';
+  ov.innerHTML = `
+    <button class="btn primary ability-close" onclick="closeAbilityChart()">✕ 关闭</button>
+    <div class="ability-left">
+      <div class="ability-card">
+        <div class="ability-card-inner">
+          <img class="ability-portrait" id="abilityPortrait" src="assets/characters/heroine_main.jpg" alt="女主">
+          <span class="ability-card-rank" id="abilityRank">N</span>
+          <div class="ability-card-label">
+            <div class="ability-name" id="abilityName">${state.heroine || '女主'}</div>
+            <div class="ability-role">推理社新人</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ability-right">
+      <svg class="ability-hex" id="abilityHex" viewBox="-150 -130 300 260"></svg>
+      <div class="ability-legend" id="abilityLegend"></div>
+      <div class="ability-titles" id="abilityTitles"></div>
+      <div class="ability-hint">能力随剧情推进与推理表现展开</div>
+    </div>
+  `;
+  host.appendChild(ov);
+  renderAbilityHex();
+}
+function closeAbilityChart(){
+  const ov = $('abilityOverlay');
+  if(ov) ov.style.display = 'none';
+  // 从结局画面打开的：关闭后自动回首页封面（backToMenu 内含 showScreen('cover')）
+  if(abilityFromEnding){
+    abilityFromEnding = false;
+    backToMenu();
+  }
+}
+// 能力图鉴：点击图例项弹窗显示该属性全部数值变化记录
+function showAbilityStatLog(key){
+  const names = {
+    lu:'🔍 推理力', shen:'💬 共情力', ded:'🧠 洞察力',
+    obs:'👁 观察力', int:'⚡ 直觉', cou:'🛡 勇气'
+  };
+  const logs = state.statLog[key] || [];
+  const total = state.stats[key] || 0;
+  let rows = '';
+  if(logs.length === 0){
+    rows = '<div class="stat-log-row"><span class="reason" style="color:#3d6ba0">暂无变化记录</span></div>';
+  } else {
+    rows = logs.map(l => {
+      const sign = l.amount >= 0 ? '+' : '';
+      const cls = l.amount >= 0 ? 'pos' : 'neg';
+      return `<div class="stat-log-row"><span class="reason">${l.reason}</span><span class="amount ${cls}">${sign}${l.amount}</span></div>`;
+    }).join('');
+  }
+  const modal = document.createElement('div');
+  modal.className = 'stat-log-modal';
+  modal.onclick = (e)=>{ if(e.target === modal) modal.remove(); };
+  modal.innerHTML = `
+    <div class="stat-log-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h4 style="color:#ffd36e">${names[key] || key}</h4>
+        <button class="btn primary" onclick="this.closest('.stat-log-modal').remove()" style="padding:4px 12px;font-size:12px">✕</button>
+      </div>
+      <div class="stat-log-total">当前总分：${total}　·　共 ${logs.length} 次变化</div>
+      ${rows}
+    </div>`;
+  const ov = $('abilityOverlay');
+  if(ov) ov.appendChild(modal); else document.body.appendChild(modal);
+}
+// 计算能力值在雷达图上的归一化半径（0..MAX_ABILITY）
+function abilityMax(){
+  // 以当前最大值+2 作为雷达图外圈，保证展开时可见成长；至少 5
+  const vals = ABILITY_DEFS.map(d => state.stats[d.key] || 0);
+  return Math.max(5, Math.max.apply(null, vals) + 2);
+}
+function renderAbilityHex(){
+  const svg = $('abilityHex');
+  if(!svg) return;
+  const R = 100; // 雷达图半径
+  const max = abilityMax();
+  const n = ABILITY_DEFS.length;
+  // 6 个轴顶点（顶部为第一项，顺时针）
+  const axes = ABILITY_DEFS.map((d,i) => {
+    const ang = -Math.PI/2 + i * (2*Math.PI/n);
+    return { x:Math.cos(ang)*R, y:Math.sin(ang)*R, ax:Math.cos(ang), ay:Math.sin(ang), def:d };
+  });
+  // 背景网格：4 层
+  let grid = '';
+  for(let layer=1; layer<=4; layer++){
+    const r = R*layer/4;
+    const pts = axes.map(a => `${(a.ax*r).toFixed(1)},${(a.ay*r).toFixed(1)}`).join(' ');
+    grid += `<polygon points="${pts}" fill="rgba(95,74,158,${0.06+layer*0.05})" stroke="rgba(74,137,220,${0.2+layer*0.12})" stroke-width="1"/>`;
+  }
+  // 轴线
+  let lines = axes.map(a => `<line x1="0" y1="0" x2="${a.x.toFixed(1)}" y2="${a.y.toFixed(1)}" stroke="rgba(74,137,220,.3)" stroke-width="1"/>`).join('');
+  // 数值多边形
+  const valPts = axes.map(a => {
+    const v = state.stats[a.def.key] || 0;
+    const r = R * Math.min(1, v/max);
+    return `${(a.ax*r).toFixed(1)},${(a.ay*r).toFixed(1)}`;
+  }).join(' ');
+  const valPoly = `<polygon points="${valPts}" fill="rgba(255,211,110,.28)" stroke="#ffd36e" stroke-width="2"/>`;
+  // 数值点 + 标签
+  let dots = '';
+  let labels = '';
+  axes.forEach(a => {
+    const v = state.stats[a.def.key] || 0;
+    const r = R * Math.min(1, v/max);
+    const px = (a.ax*r).toFixed(1), py = (a.ay*r).toFixed(1);
+    dots += `<circle cx="${px}" cy="${py}" r="4" fill="${a.def.color}" stroke="#1a1d2e" stroke-width="1.5"/>`;
+    const lx = (a.ax*(R+18)).toFixed(1), ly = (a.ay*(R+18)).toFixed(1);
+    labels += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="${a.def.color}" font-family="sans-serif">${a.def.name}</text>`;
+  });
+  svg.innerHTML = grid + lines + valPoly + dots + labels;
+  // 图例
+  const leg = $('abilityLegend');
+  if(leg){
+    leg.innerHTML = ABILITY_DEFS.map(d => `
+      <div class="ability-leg-item" onclick="showAbilityStatLog('${d.key}')" title="点击查看数值变化明细">
+        <span class="ability-leg-dot" style="background:${d.color}"></span>
+        <span>${d.name}</span>
+        <span class="ability-leg-val">${state.stats[d.key]||0}</span>
+      </div>`).join('');
+  }
+  // 立绘：固定用 heroine_main.jpg（典藏卡用）
+  const img = $('abilityPortrait');
+  if(img) img.src = 'assets/characters/heroine_main.jpg';
+  const nm = $('abilityName');
+  if(nm) nm.textContent = state.heroine || (CHARACTERS.hero ? CHARACTERS.hero.name : '女主');
+  // 典藏卡等级：按总能力值决定 N/R/SR/SSR/UR
+  const total = ABILITY_DEFS.reduce((s,d)=>s + (state.stats[d.key]||0), 0);
+  const rankEl = $('abilityRank');
+  if(rankEl){
+    let rank = 'N';
+    if(total >= 20) rank = 'UR';
+    else if(total >= 14) rank = 'SSR';
+    else if(total >= 8) rank = 'SR';
+    else if(total >= 3) rank = 'R';
+    rankEl.textContent = rank;
+  }
+  // ===== 称号 + 话术渲染 =====
+  const titlesEl = $('abilityTitles');
+  if(titlesEl){
+    const obs = state.stats.obs||0, int = state.stats.int||0, cou = state.stats.cou||0;
+    const lu = state.stats.lu||0, shen = state.stats.shen||0, ded = state.stats.ded||0;
+    const titles = [];
+    // ===== 结局5 最高优先级：累计放弃≥3次，强制称号（覆盖所有其他分数）=====
+    if(state.flags?.endByGiveUp || (state.giveUpCount||0) >= 3){
+      titles.push({n:'不适合做侦探的人', c:'#ff5050', t:`你在推理关头临阵退缩累计三次。今后你不会再获得任何案件的进入权限。——推理社的大门，不对选择逃避的人敞开。`});
+      titlesEl.innerHTML = titles.map(t => `
+        <div class="ability-title-item">
+          <span class="ability-title-name" style="color:${t.c}">【${t.n}】</span>
+          <span class="ability-title-text">${t.t}</span>
+        </div>`).join('');
+      return;  // 强制终止后续称号判断
+    }
+    // 单项称号
+    if(obs >= 15) titles.push({n:'敏锐之眼', c:`#7fff7f`, t:`在本案中，你观察到了从壁炉冷灰到砒霜粥碗的每一处细节，${state.clues.length}条线索无一遗漏。`});
+    if(int >= 6) titles.push({n:'直觉之子', c:`#4a89dc`, t:`你凭直觉追问出周编辑的耳钉、林作者的铜锈，第六感是你的利刃。`});
+    if(cou >= 5) titles.push({n:'无畏之心', c:`#ffa040`, t:`发现尸体时你冲在最前，直面真凶时你毫不退缩。`});
+    if(shen >= 6) titles.push({n:'共情天使', c:`#ff80c0`, t:`你理解了每个人被逼到绝路的痛苦，人性在你眼中无处遁形。`});
+    if(lu >= 10) titles.push({n:'推理大师', c:`#ffd36e`, t:`从假账底稿到铁证链闭，你的逻辑环环相扣。`});
+    if(ded >= 8) titles.push({n:'洞察之刃', c:`#40d0e0`, t:`你识破了时间矛盾、看穿了谎言背后的真相。`});
+    // 综合称号
+    const allAbove4 = ABILITY_DEFS.every(d => (state.stats[d.key]||0) >= 4);
+    if(allAbove4 && total >= 24) titles.push({n:'六边形侦探', c:`#ffd36e`, t:`没有短板的完美侦探，暴雨孤岛因你而真相大白。`});
+    if(total >= 35) titles.push({n:'破案之星', c:'#fff', t:`综合表现登峰造极，你是这座本社最闪耀的推理之星。`});
+    // 数值过低
+    if(titles.length === 0){
+      titles.push({n:'初出茅庐', c:'#888', t:`暴雨孤岛是你的第一课——每一处细节、每一次直觉、每一份勇气，都在塑造未来的你。`});
+    }
+    // 渲染
+    titlesEl.innerHTML = titles.map(t => `
+      <div class="ability-title-item">
+        <span class="ability-title-name" style="color:${t.c}">【${t.n}】</span>
+        <span class="ability-title-text">${t.t}</span>
+      </div>`).join('');
+  }
+}
+
+/* =========================================================
+   人物图鉴渲染
+   ========================================================= */
+function renderCharGallery(){
+  const box = $('charCards');
+  box.innerHTML = '';
+  ['hero','lu','shen'].forEach(key => {
+    const c = CHARACTERS[key];
+    if(!c) return;
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.innerHTML = `
+      <div class="char-card-bg">
+        <img class="char-card-img" src="${c.img}" alt="${c.name}">
+      </div>
+      <div class="char-card-body">
+        <h3>${c.name}</h3>
+        <div class="char-role">${c.role}</div>
+        <p>${c.desc}</p>
+      </div>`;
+    box.appendChild(card);
+  });
+}
+
+/* =========================================================
+   BGM 系统
+   ========================================================= */
+const bgmAudio = $('bgmAudio');
+let currentBgm = null;
+let bgmMuted = false;
+
+function playBgm(trackKey){
+  if(bgmMuted) return;
+  const src = BGM_TRACKS[trackKey];
+  if(!src) return;
+  if(currentBgm === trackKey) return;
+  currentBgm = trackKey;
+  bgmAudio.src = src;
+  bgmAudio.play().catch(()=>{
+    const resume = ()=>{
+      if(!bgmMuted && currentBgm === trackKey) bgmAudio.play().catch(()=>{});
+      document.removeEventListener('click', resume);
+    };
+    document.addEventListener('click', resume);
+  });
+}
+function stopBgm(){
+  bgmAudio.pause();
+  bgmAudio.currentTime = 0;
+  currentBgm = null;
+}
+/* =========================================================
+   立绘系统
+   ========================================================= */
+function showPortrait(type){
+  const c = CHARACTERS[type];
+  if(!c) { hidePortrait(); return; }
+  // 切单人时隐藏群像层
+  hideGroupPortrait();
+  const img = $('charCenter');
+  if(img.src.indexOf(c.img) === -1){
+    img.src = c.img;
+  }
+  img.classList.add('show');
+  $('bgOverlay').classList.add('dim');
+}
+function hidePortrait(){
+  $('charCenter').classList.remove('show');
+  $('bgOverlay').classList.remove('dim');
+}
+// 群像：多人立绘并排登场。types 为角色 key 数组，active 可选高亮某个
+function showGroupPortrait(types, active){
+  // 切换到群像时必须先隐藏单人立绘，避免两者叠加出现多余人物
+  hidePortrait();
+  const box = $('charGroup');
+  box.innerHTML = '';
+  types.forEach(t => {
+    const c = CHARACTERS[t];
+    if(!c) return;
+    const im = document.createElement('img');
+    im.className = 'gp' + (t === active ? ' active' : '');
+    im.src = c.img;
+    im.dataset.type = t;
+    box.appendChild(im);
+  });
+  box.classList.add('show');
+  $('bgOverlay').classList.add('dim');
+}
+function setGroupActive(active){
+  $('charGroup').querySelectorAll('.gp').forEach(im => {
+    im.classList.toggle('active', im.dataset.type === active);
+  });
+}
+function hideGroupPortrait(){
+  $('charGroup').classList.remove('show');
+  $('charGroup').innerHTML = '';
+}
+
+/* =========================================================
+   效果层
+   ========================================================= */
+function startRain(layer){
+  if(!layer) layer = $('rainLayer');
+  layer.classList.add('show');
+  layer.innerHTML = '';
+  for(let i=0;i<90;i++){
+    const d = document.createElement('div');
+    d.className = 'rain-drop';
+    const left = Math.random()*100;
+    const dur = 0.45 + Math.random()*0.85;
+    const delay = Math.random()*2;
+    const h = 30 + Math.random()*70;
+    d.style.left = left + '%';
+    d.style.height = h + 'px';
+    d.style.animationDuration = dur + 's';
+    d.style.animationDelay = delay + 's';
+    layer.appendChild(d);
+  }
+}
+function stopRain(){ $('rainLayer').classList.remove('show'); }
+function doShake(){
+  const gi = $('gameInner');
+  gi.classList.remove('shake');
+  void gi.offsetWidth;
+  gi.classList.add('shake');
+}
+function doGlow(){
+  const g = $('glowFlash');
+  g.classList.remove('on');
+  void g.offsetWidth;
+  g.classList.add('on');
+}
+function applyEffect(eff){
+  stopRain();
+  if(eff === 'rain') startRain();
+  if(eff === 'shake') doShake();
+}
+
+/* =========================================================
+   音效（WebAudio 合成）
+   ========================================================= */
+let _actx;
+function ac(){ if(!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)(); return _actx; }
+function beep(f, d, type='sine', g=.05){
+  try{
+    const x = ac();
+    const o = x.createOscillator();
+    const gv = x.createGain();
+    o.type = type;
+    o.frequency.value = f;
+    gv.gain.value = g;
+    o.connect(gv);
+    gv.connect(x.destination);
+    o.start();
+    gv.gain.exponentialRampToValueAtTime(.0001, x.currentTime + d);
+    o.stop(x.currentTime + d + .02);
+  }catch(e){}
+}
+function sfxClick(){ beep(640,.04,'triangle',.03); }
+function sfxClue(){ beep(880,.08,'sine',.05); setTimeout(()=>beep(1175,.1),60); }
+function sfxGood(){ beep(784,.1); setTimeout(()=>beep(988,.1),90); setTimeout(()=>beep(1319,.14),180); }
+function sfxBad(){ beep(180,.18,'sawtooth',.05); }
+document.addEventListener('click', e=>{
+  if(e.target.closest('.dialogue-box,.game-canvas,.choice-btn,.btn,.hotspot,.canvas-tools')) sfxClick();
+}, true);
+
+/* =========================================================
+   数值栏
+   ========================================================= */
+function setStatsUI(){
+  $('sLu').textContent = state.stats.lu;
+  $('sShen').textContent = state.stats.shen;
+  $('sDed').textContent = state.stats.ded;
+  $('sObs').textContent = state.stats.obs || 0;
+  $('sInt').textContent = state.stats.int || 0;
+  $('sCou').textContent = state.stats.cou || 0;
+  // 若能力图鉴已打开，同步刷新雷达图
+  const ov = $('abilityOverlay');
+  if(ov && ov.style.display !== 'none') renderAbilityHex();
+}
+function toggleStats(){
+  setStatsUI();
+  const bar = $('statsBar');
+  const gi = $('gameInner');
+  bar.classList.toggle('show');
+  gi.classList.toggle('stats-on');
+  if(!bar.classList.contains('show')){
+    $('statDetail').classList.remove('show');
+  }
+}
+// hover 悬浮展示数值明细
+function showStatDetail(key){
+  const el = $('statDetail');
+  const names = {
+    lu:'🔍 推理力（逻辑链）', shen:'💬 共情力（读懂人心）', ded:'🧠 洞察力（看穿矛盾）',
+    obs:'👁 观察力（拾取细节）', int:'⚡ 直觉（第六感追问）', cou:'🛡 勇气（直面危险）'
+  };
+  const logs = state.statLog[key] || [];
+  const total = state.stats[key] || 0;
+  let html = `<h5 style="margin:0 0 6px;color:#ffd36e">${names[key]} <span style="color:#4a89dc">共 ${total} 分</span></h5>`;
+  if(logs.length === 0){
+    html += '<div style="color:#3d6ba0">暂无明细记录（拾取线索/推论成功会自动加分）</div>';
+  } else {
+    html += logs.slice().reverse().slice(0, 8).map(l => {
+      const sign = l.amount >= 0 ? '+' : '';
+      const cls = l.amount >= 0 ? 'amt' : 'neg';
+      return `<div class="log-item"><span>${l.reason}</span><span class="${cls}">${sign}${l.amount}</span></div>`;
+    }).join('');
+  }
+  el.innerHTML = html;
+  el.classList.add('show');
+  el.dataset.key = key;
+}
+function hideStatDetail(){
+  $('statDetail').classList.remove('show');
+}
+
+/* =========================================================
+   对话推进 / 打字机
+   ========================================================= */
+let typingTimer = null, typingDone = false, currentLines = [], lineIdx = 0;
+let pendingAfterLines = [], pendingThen = null;  // 选项后追加"嫌疑人回答"用
+
+function playNode(nodeId){
+  state.nodeId = nodeId;
+  // 记录探索到 localStorage，供脉络树展示真实内容（否则灰色???）
+  markExplored(nodeId);
+  const node = SCRIPT[nodeId];
+  if(!node){ toast('剧本节点丢失：' + nodeId); return; }
+
+  if(node.bgm) playBgm(node.bgm);
+  if(node.end){ showEnding(node.end); return; }
+
+  setBg(node.bg);
+  if(node.effect) applyEffect(node.effect);
+  else stopRain();
+
+  clearHotspots();
+  hideChoices();
+  hidePortrait();
+
+  currentLines = node.lines || [];
+  lineIdx = 0;
+  pendingAfterLines = []; pendingThen = null;
+  setStatsUI();
+  // 自动存档：每次进入新节点时保存进度，确保"继续游戏"永远可用
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
+  nextLine();
+}
+
+function nextLine(){
+  // 1. 本节点原始台词
+  if(lineIdx < currentLines.length){
+    showLine(currentLines[lineIdx]);
+    lineIdx++;
+    return;
+  }
+  // 2. 选项后追加的"嫌疑人回答"（一定要玩家点击后才推进）
+  if(pendingAfterLines.length > 0){
+    const extra = pendingAfterLines.shift();
+    showLine(extra);
+    return;
+  }
+  // 3. 追加台词全部播完，执行后续动作（进入下一节点/开时间线）
+  if(pendingThen){
+    const fn = pendingThen; pendingThen = null;
+    fn();
+    return;
+  }
+  const node = SCRIPT[state.nodeId];
+  if(node.search){ showHotspots(node.search); return; }
+  if(node.requireDed){ waitDeduction(node.requireDed, node.next); return; }
+  if(node.tl){ openTimeline(()=>playNode(node.next)); return; }
+  if(node.choices){ showChoices(node.choices); return; }
+  if(node.next){ playNode(node.next); }
+}
+
+function showLine(line){
+  const name = line.s.replace('女主', state.heroine);
+  const spk = $('speaker');
+  spk.textContent = name;
+  spk.className = 'speaker';
+  if(line.type === 'lu') spk.classList.add('lu');
+  if(line.type === 'shen') spk.classList.add('shen');
+  if(line.type === 'hero') spk.classList.add('hero');
+
+  // 群像优先：line.group 触发多人同框，line.active 高亮当前说话者
+  if(line.group && Array.isArray(line.group)){
+    showGroupPortrait(line.group, line.active || line.type);
+  } else if(line.type && CHARACTERS[line.type]){
+    showPortrait(line.type);
+  } else {
+    hidePortrait();
+  }
+
+  const content = line.c.replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n');
+  typeWriter($('dialogueText'), content);
+}
+
+function typeWriter(el, txt){
+  typingDone = false;
+  el.textContent = '';
+  el.classList.remove('done');
+  clearInterval(typingTimer);
+  let i = 0;
+  typingTimer = setInterval(()=>{
+    el.textContent += txt[i];
+    i++;
+    if(i >= txt.length){
+      clearInterval(typingTimer);
+      typingDone = true;
+      el.classList.add('done');
+    }
+  }, 28);
+}
+
+function setBg(file){ $('bgImg').src = 'assets/backgrounds/' + file; }
+
+$('gameInner').addEventListener('click', e=>{
+  if(e.target.closest('.hotspot,.choices,.choice-btn,.canvas-tools,.stats-bar,.canvas-panel,.clue-item,.slot,.btn')) return;
+  // 关键 toast (sticky)：玩家点画布空白也能关闭，确保一定要主动点掉
+  const toastEl = $('toast');
+  if(toastEl.classList.contains('sticky') && toastEl.classList.contains('show')){
+    toastEl.classList.remove('show','sticky');
+  }
+  if(typingDone){
+    nextLine();
+  } else {
+    clearInterval(typingTimer);
+    const line = currentLines[lineIdx - 1];
+    if(line){
+      const el = $('dialogueText');
+      el.textContent = line.c.replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n');
+      el.classList.add('done');
+      typingDone = true;
+    }
+  }
+});
+
+/* =========================================================
+   选项
+   ========================================================= */
+function showChoices(choices){
+  const c = $('choices');
+  c.innerHTML = '';
+  // 选项出现时切换左右分栏布局：立绘在左，选项在右，避免遮挡
+  $('gameInner').classList.add('choices-open');
+  c.classList.add('show');
+  // 保存当前节点的快照（用于脉络图回跳）：含支线触发标记与盘问记录，避免回跳后支线台词永久丢失
+  const snapshot = JSON.parse(JSON.stringify({
+    stats: state.stats, statLog: state.statLog,
+    clues: state.clues, deduced: state.deduced, flags: state.flags,
+    dedFailCount: state.dedFailCount,
+    giveUpCount: state.giveUpCount,
+    questionLog: state.questionLog || [],
+    _triggeredNode3: state._triggeredNode3 || false,
+    _triggeredNode7: state._triggeredNode7 || false
+  }));
+  state.branchSnapshots[state.nodeId] = snapshot;
+  // ===== 指认嫌疑人特殊渲染：群像立绘 + 解锁状态视觉指引 =====
+  const DED_TO_SUSPECT = { d7_evidence_all:'zhou', d6_motive_lin:'lin', d4_motive_chen:'chen', d5_motive_xu:'xu' };
+  const isAccuseScene = state.nodeId === 'node11' && choices.some(ch => ch.needDed && ch.needDed.some(d => DED_TO_SUSPECT[d]));
+  if(isAccuseScene){
+    const suspects = ['chen','lin','zhou','xu']; // 按旁白扫视顺序
+    showGroupPortrait(suspects, null);
+    // 标记未解锁的立绘为半透明灰度
+    const unlockedCount = suspects.filter(t => {
+      const opt = choices.find(ch => ch.needDed && ch.needDed.some(d => DED_TO_SUSPECT[d] === t));
+      return opt && opt.needDed.every(id => state.deduced.includes(id));
+    }).length;
+    $('charGroup').querySelectorAll('.gp').forEach(im => {
+      const t = im.dataset.type;
+      const opt = choices.find(ch => ch.needDed && ch.needDed.some(d => DED_TO_SUSPECT[d] === t));
+      if(opt && !opt.needDed.every(id => state.deduced.includes(id))) im.classList.add('locked');
+    });
+    // 提示条：指引玩家多推论解锁更多嫌疑人
+    const hint = document.createElement('div');
+    hint.className = 'accuse-hint';
+    hint.innerHTML = `💡 推理越多，可指认的嫌疑人越多。已解锁 <b>${unlockedCount}/4</b>。`;
+    c.appendChild(hint);
+  }
+  // 手动推论 = 排除 d7（自动解锁），其余 7 条；用于 node10 时间线入口的推论完成度过滤
+  const MANUAL_DEDS = DEDUCTIONS.filter(d => !d.need.includes('__AUTO__')).map(d => d.id);
+  const allDedsDone = MANUAL_DEDS.every(id => state.deduced.includes(id));
+  choices.forEach((ch, i)=>{
+    // needQLogNot: 当指定 qLog 已在 questionLog 中时，不显示此选项（用于追问模块复用未问问题）
+    if(ch.needQLogNot){
+      const qLog = state.questionLog || [];
+      if(ch.needQLogNot.some(q => qLog.includes(q))){
+        return; // 跳过，不渲染
+      }
+    }
+    // needAllDeds / hideIfAllDeds: 时间线入口的推论完成度过滤
+    if(ch.needAllDeds && !allDedsDone) return; // 需全完成但没全完成 → 隐藏
+    if(ch.hideIfAllDeds && allDedsDone) return; // 全完成时隐藏 → 隐藏
+    const b = document.createElement('button');
+    b.className = 'choice-btn';
+    // needStat 数值门槛：数值不够时灰色显示且不可选
+    let statLocked = false;
+    if(ch.needStat){
+      const entries = Object.entries(ch.needStat);
+      statLocked = entries.some(([k,v]) => (state.stats[k]||0) < v);
+    }
+    if(statLocked){
+      b.classList.add('locked');
+      const statNames = {lu:'推理力',shen:'共情力',ded:'洞察力',obs:'观察力',int:'直觉',cou:'勇气'};
+      const needTxt = Object.entries(ch.needStat).map(([k,v])=>`${statNames[k]||k}≥${v}`).join('，');
+      b.innerHTML = `<b style="color:#666">${String.fromCharCode(65+i)}.</b> <span style="color:#888">🔒 ${ch.t}</span><br><small style="color:#666;font-size:11px">需要 ${needTxt}（当前不足）</small>`;
+      b.onclick = (ev)=>{ ev.stopPropagation(); toast(`需要 ${needTxt} 才能解锁此选项`, 2500); };
+      c.appendChild(b);
+      return;
+    }
+    // needDed 推论门槛：未完成对应推论时灰度锁定显示（openDed 选项走原有逻辑）
+    if(ch.needDed && !ch.openDed){
+      const dedUnlocked = ch.needDed.every(id => state.deduced.includes(id));
+      if(!dedUnlocked){
+        b.classList.add('ded-locked');
+        const missTitles = ch.needDed.filter(id => !state.deduced.includes(id))
+          .map(id => (DEDUCTIONS.find(d=>d.id===id)||{}).title || id).join('、');
+        b.innerHTML = `<b style="color:#1e3a5f">${String.fromCharCode(65+i)}.</b> <span style="color:#6b8db5">🔒 ${ch.t}</span><br><small style="color:#3d6ba0;font-size:11px">需先完成「${missTitles}」推论解锁</small>`;
+        b.onclick = (ev)=>{ ev.stopPropagation(); toast(`需先完成「${missTitles}」推论才能指认`, 3000); };
+        c.appendChild(b);
+        return;
+      }
+    }
+    b.innerHTML = `<b style="color:#ffd36e">${String.fromCharCode(65+i)}.</b> ${ch.t}`;
+    b.onclick = (ev)=>{
+      ev.stopPropagation();
+      // openDed 选项：还有未完成推论时打开推论面板而非进入下一步
+      if(ch.openDed && !allDedsDone){
+        const missIds = MANUAL_DEDS.filter(id => !state.deduced.includes(id));
+        const missTitles = missIds.map(id => (DEDUCTIONS.find(d=>d.id===id)||{}).title || id).join('、');
+        toast(`先合成「${missTitles}」后再开始时间线。`, 3000);
+        hideChoices();
+        openDeduction();
+        return;
+      }
+      // 需要特定推论才能选择的选项（如指认真凶需先破不在场证明）
+      if(ch.needDed && !ch.needDed.every(id => state.deduced.includes(id))){
+        const miss = ch.needDed.filter(id => !state.deduced.includes(id))
+          .map(id => (DEDUCTIONS.find(d=>d.id===id)||{}).title || id).join('、');
+        toast(`证据不足：需先完成「${miss}」推论才能指认。`, 3200);
+        return;
+      }
+      // 记录盘问问题到 questionLog（用于二次盘问环节）
+      if(ch.qLog){
+        if(!state.questionLog) state.questionLog = [];
+        state.questionLog.push(ch.qLog);
+      }
+      // Append-only：新选择永远追加到末尾，不截断历史
+      state.branchLog.push({
+        nodeId: state.nodeId,
+        choiceText: ch.t,
+        choiceIdx: i,
+        resultNode: ch.next,
+        effect: ch.eff || {},
+        time: Date.now(),
+        branchId: 'b' + Date.now()  // 唯一分支ID
+      });
+      // 记录当前指针位置
+      state.currentLogIdx = state.branchLog.length - 1;
+      // 记录选择摘要（去掉A/B前缀，最多10个汉字），供数值明细reason写具体中文
+      const choiceShort = (ch.t || '').replace(/^[A-Z]\.\s*/, '').trim();
+      const choiceSummary = choiceShort.length > 10 ? choiceShort.slice(0, 10) + '…' : choiceShort;
+      _lastChoiceSummary = choiceSummary;
+      if(ch.eff) applyEff(ch.eff, choiceSummary);
+      hideChoices();
+      // 盘问等带 hint 的选项：对方回应必须进入对话框里播放（强制玩家点击再推进，不会自动消失）
+      if(ch.hint){
+        // 推断 speaker：优先 choice.hintSpeaker，再从节点 id 猜（Q1=陈/Q2=林/Q3=周/Q4=许），否则"旁白"
+        let spkKey = ch.hintSpeaker;
+        if(!spkKey){
+          const nid = state.nodeId;
+          spkKey = nid==='Q1'?'chen':nid==='Q2'?'lin':nid==='Q3'?'zhou':nid==='Q4'?'xu':null;
+        }
+        const spk = spkKey && CHARACTERS[spkKey] ? CHARACTERS[spkKey] : null;
+        const extraLine = {
+          s: spk ? spk.name : '旁白',
+          type: spkKey || null,
+          c: ch.hint,
+        };
+        pendingAfterLines.push(extraLine);
+        // 等伪台词播完（玩家点击）后再推进
+        pendingThen = ()=>{
+          if(ch.tl) openTimeline(()=>playNode(ch.next));
+          else playNode(ch.next);
+        };
+        nextLine();  // 立即播第一条追加台词
+      } else if(ch.tl){ openTimeline(()=>playNode(ch.next)); }
+      else playNode(ch.next);
+    };
+    c.appendChild(b);
+  });
+}
+function hideChoices(){
+  $('choices').classList.remove('show');
+  $('gameInner').classList.remove('choices-open');
+}
+// 上一条选择的中文摘要（由 showChoices 点击处理时写入，供 applyEff 用作 reason）
+let _lastChoiceSummary = '';
+function applyEff(eff, choiceSummary){
+  const sceneName = SCENE_NAMES[state.nodeId] || state.nodeId;
+  const summary = choiceSummary || _lastChoiceSummary;
+  const reasonBase = summary
+    ? `${sceneName} · 选「${summary}」`
+    : `${sceneName} · 选项`;
+  if(eff.lu){
+    state.stats.lu += eff.lu;
+    state.statLog.lu.push({reason:reasonBase, amount:eff.lu, time:Date.now()});
+  }
+  if(eff.shen){
+    state.stats.shen += eff.shen;
+    state.statLog.shen.push({reason:reasonBase, amount:eff.shen, time:Date.now()});
+  }
+  if(eff.ded){
+    state.stats.ded += eff.ded;
+    state.statLog.ded.push({reason:reasonBase, amount:eff.ded, time:Date.now()});
+  }
+  if(eff.obs){
+    state.stats.obs = (state.stats.obs||0) + eff.obs;
+    (state.statLog.obs = state.statLog.obs || []).push({reason:reasonBase, amount:eff.obs, time:Date.now()});
+  }
+  if(eff.int){
+    state.stats.int = (state.stats.int||0) + eff.int;
+    (state.statLog.int = state.statLog.int || []).push({reason:reasonBase, amount:eff.int, time:Date.now()});
+  }
+  if(eff.cou){
+    state.stats.cou = (state.stats.cou||0) + eff.cou;
+    (state.statLog.cou = state.statLog.cou || []).push({reason:reasonBase, amount:eff.cou, time:Date.now()});
+  }
+  if(eff.flag) state.flags[eff.flag] = true;
+  setStatsUI();
+}
+
+/* =========================================================
+   放大镜搜证（鼠标变放大镜 + 场景叠加小线索图 + 拾取后放大）
+   ========================================================= */
+function clearHotspots(){
+  $('hotspots').innerHTML = '';
+  $('gameInner').classList.remove('search-mode');
+  closeSearchContinueBar();
+}
+function showHotspots(cfg){
+  $('gameInner').classList.add('search-mode'); // 鼠标切放大镜
+  const arr = HOTSPOTS[cfg.bgKey] || [];
+  const wrap = $('hotspots');
+  wrap.innerHTML = '';
+  arr.forEach(h=>{
+    const isFake = !!h.fake;
+    const c = isFake ? null : CLUES[h.id];
+    const d = document.createElement('div');
+    d.className = isFake ? 'hotspot show fake' : 'hotspot show';
+    d.style.left = h.x + '%';
+    d.style.top = h.y + '%';
+    d.style.transform = 'translate(-50%, -50%)';
+    if(!isFake && c && c.img){
+      d.innerHTML = `<img class="clue-mini" src="${c.img}" alt="${c.n}">`;
+    }
+    if(!isFake && state.clues.includes(h.id)) d.classList.add('found');
+    d.onclick = (e)=>{
+      e.stopPropagation();
+      if(isFake){
+        // 干扰物：显示环境描述，不拾取线索，可反复查看
+        toast('🔎 ' + h.fake, 2400);
+        return;
+      }
+      const already = state.clues.includes(h.id);
+      if(!already){
+        addClue(h.id);
+        d.classList.add('found');
+        showClueDetail(h.id, true); // 拾取后放大展示
+      } else {
+        showClueDetail(h.id, false); // 已拾取的再次点击可查看
+      }
+      const allGot = cfg.require.every(id => state.clues.includes(id));
+      if(allGot && !already){
+        toast(cfg.msg + '（线索已集齐，请拾取完毕后点击「继续」推进剧情）', 3200);
+        showSearchContinueBar();
+      }
+    };
+    wrap.appendChild(d);
+  });
+  toast('🔎 放大镜已开启：点击场景中发光的线索拾取', 2200);
+}
+// 搜证完成后显示"继续"按钮，由玩家点击推进剧情（不自动跳转）
+function showSearchContinueBar(){
+  if($('searchContinueBar')) return; // 已显示
+  const bar = document.createElement('div');
+  bar.id = 'searchContinueBar';
+  bar.style.cssText = 'position:absolute;left:50%;bottom:8%;transform:translateX(-50%);z-index:60;display:flex;gap:14px;align-items:center;';
+  bar.innerHTML = `
+    <button class="btn primary" onclick="advanceAfterSearch()" style="padding:12px 28px;font-size:16px;border-radius:10px;letter-spacing:1px;">▶ 继续剧情</button>
+  `;
+  $('gameInner').appendChild(bar);
+}
+function closeSearchContinueBar(){
+  const bar = $('searchContinueBar');
+  if(bar) bar.remove();
+}
+function advanceAfterSearch(){
+  closeSearchContinueBar();
+  // 关闭所有可能打开的画布面板/弹窗：线索放大弹窗、线索背包、推论面板、时间线面板
+  closeMask('clueModal');
+  closeMask('invPanel');
+  closeMask('dedPanel');
+  closeMask('tlPanel');
+  clearHotspots();
+  $('gameInner').classList.remove('search-mode');
+  // ===== 条件触发支线：搜证后检查特定线索触发额外台词 =====
+  const triggerLines = [];
+  if(state.nodeId === 'node3' && state.clues.includes('task_note')){
+    triggerLines.push({ s:'沈同学', type:'shen', c:'（低声）那封邀请信……陈老板找推理社来，不只是见证那么简单。我外婆陈兰当年也是陈茉莉的代笔之一，后来精神失常去世了。这座老宅里，每个人都被绑在过去里。' });
+    triggerLines.push({ s:'女主', type:'hero', c:'（你感觉到沈同学的悲伤——他今晚来，或许不只是因为社团活动。）' });
+    if(!state._triggeredNode3){ state._triggeredNode3 = true; applyEff({shen:1, int:1}, '沈同学提及外婆'); }
+  }
+  if(state.nodeId === 'node7' && state.clues.includes('xu_diary_30y')){
+    triggerLines.push({ s:'旁白', c:'你走出地下室时，看见许管家独自在走廊尽头，背对着所有人，肩膀在微微发抖。她手里攥着一张泛黄的旧照片。' });
+    triggerLines.push({ s:'女主', type:'hero', c:'（许管家今晚知道了什么——那个30年前的秘密，让她从隐忍变成了崩溃的边缘。）' });
+    if(!state._triggeredNode7){ state._triggeredNode7 = true; applyEff({shen:1, int:1}, '许管家走廊擦泪'); }
+  }
+  // 如果有触发台词，通过 pendingAfterLines 机制播放（玩家点击推进），播完后执行后续
+  if(triggerLines.length > 0){
+    pendingAfterLines = triggerLines;
+    pendingThen = ()=>{
+      const node = SCRIPT[state.nodeId];
+      if(node && node.choices) showChoices(node.choices);
+      else if(node && node.next) playNode(node.next);
+    };
+    nextLine(); // 启动台词播放
+    return;
+  }
+  const node = SCRIPT[state.nodeId];
+  if(node && node.choices) showChoices(node.choices);
+  else if(node && node.next) playNode(node.next);
+  else toast('提示：未配置下一节点', 2200);
+}
+function addClue(id){
+  if(state.clues.includes(id)) return;
+  state.clues.push(id);
+  const c = CLUES[id];
+  toast(`获得线索：${c ? c.n : id}`, 2500);
+  // 拾取线索增加观察力
+  state.stats.obs = (state.stats.obs||0) + 0.5;
+  (state.statLog.obs = state.statLog.obs || []).push({reason:`拾取线索·${c ? c.n : id}`, amount:0.5, time:Date.now()});
+  setStatsUI();
+}
+// 线索放大展示（picked=true 表示刚拾取）
+function showClueDetail(id, picked){
+  const c = CLUES[id];
+  if(!c) return;
+  const img = $('clueModalImg');
+  const docBox = $('clueModalDoc');
+  // 文档类线索：用 CSS 渲染纸质文档，文字与剧本完全一致（AI 生图无法可靠渲染中文）
+  if(c.doc){
+    img.style.display = 'none';
+    docBox.style.display = 'block';
+    docBox.className = 'clue-modal-doc doc-' + c.doc.kind;
+    let html = `<div class="doc-header">${c.doc.header}</div>`;
+    if(c.doc.meta) html += `<div class="doc-meta">${c.doc.meta}</div>`;
+    html += `<div class="doc-body">${c.doc.body}</div>`;
+    if(c.doc.kind === 'letter') html += `<div class="doc-sign">——无名</div>`;
+    if(c.doc.kind === 'will') html += `<div class="doc-sign">陈茉莉　亲笔</div>`;
+    docBox.innerHTML = html;
+  } else {
+    img.style.display = 'block';
+    docBox.style.display = 'none';
+    img.src = c.img || '';
+  }
+  $('clueModalName').textContent = c.n;
+  $('clueModalDesc').textContent = c.d;
+  $('clueModalTip').textContent = picked ? '✓ 已收入背包' : '📖 背包中的线索';
+  $('clueModalTip').style.color = picked ? '#7fff7f' : '#4a89dc';
+  $('clueModal').classList.add('show');
+}
+
+/* =========================================================
+   线索背包（画布内面板）
+   ========================================================= */
+function openInventory(){
+  const g = $('invGrid');
+  g.innerHTML = '';
+  const ids = Object.keys(CLUES);
+  ids.forEach(id=>{
+    const c = CLUES[id];
+    const got = state.clues.includes(id);
+    const card = document.createElement('div');
+    card.className = 'card' + (got ? '' : ' locked');
+    card.innerHTML = got
+      ? `<h4>${c.n}</h4><p>${c.d}</p>${c.img?'<div class="meta">🔍 点击查看</div>':''}`
+      : `<h4>？？？</h4><p>尚未收集的线索。</p><div class="meta">ID: ${id}</div>`;
+    if(got && c.img){
+      card.style.cursor = 'pointer';
+      card.onclick = ()=>showClueDetail(id, false);
+    }
+    g.appendChild(card);
+  });
+  $('invHint').textContent = `共收集到 ${state.clues.length} / ${ids.length} 条线索`;
+  $('invPanel').classList.add('show');
+}
+
+/* =========================================================
+   推论合成（画布内面板）
+   ========================================================= */
+let slots = [null, null, null, null, null];
+let _clueListDelegated = false;
+function openDeduction(){
+  slots = [null, null, null, null, null];
+  $('dedTotalCount').textContent = DEDUCTION_TOTAL;
+  $('dedDoneCount').textContent = state.deduced.length;
+  $('dedFailCount').textContent = state.dedFailCount || 0;
+  $('dedResult').innerHTML = '';
+  // 显示当前节点的推论任务提示（仅提示需要推理，不透露具体线索）
+  const node = SCRIPT[state.nodeId];
+  const hint = $('dedTaskHint');
+  if(node && node.requireDed && node.requireDed.length > 0){
+    hint.innerHTML = `📌 本场景【${SCENE_NAMES[state.nodeId]||state.nodeId}】需要完成关键推论才能继续`;
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+  // 兜底按钮：失败6次以上显示
+  $('giveUpBtn').style.display = (state.dedFailCount >= 6) ? 'inline-block' : 'none';
+  // 查看提示按钮：失败6次以上显示（持久保留，避免重开后丢失）
+  $('dedHintBtn').style.display = (state.dedFailCount >= 6) ? 'inline-block' : 'none';
+  // 只绑定一次：线索列表点击事件委托（data-id 匹配）
+  if(!_clueListDelegated){
+    const list = $('clueList');
+    list.addEventListener('click', (e)=>{
+      const item = e.target.closest('.clue-item');
+      if(!item) return;
+      const id = item.dataset.clueId;
+      if(!id) return;
+      const idx = slots.indexOf(id);
+      if(idx >= 0){
+        slots[idx] = null;
+      } else {
+        const empty = slots.indexOf(null);
+        if(empty < 0){ toast('槽位已满，先点击槽位移除一条'); return; }
+        slots[empty] = id;
+      }
+      renderSlots(); renderClueList();
+    });
+    _clueListDelegated = true;
+  }
+  renderSlots();
+  renderClueList();
+  renderDedDoneList();
+  $('dedPanel').classList.add('show');
+}
+// 合成大结论模块已移除（逻辑不稳定）；d7 铁证链闭仍由 checkAutoDeductions 自动解锁
+
+function giveUpDeduction(){
+  // 放弃推理惩罚：扣推理值 -1，累计放弃次数（无论当前节点是否 requireDed，都计数）
+  state.stats.lu = Math.max(0, (state.stats.lu||0) - 1);
+  (state.statLog.lu = state.statLog.lu || []).push({reason:'放弃推理', amount:-1, time:Date.now()});
+  state.giveUpCount = (state.giveUpCount||0) + 1;
+  setStatsUI();
+  // 累计放弃 ≥ 3 次 → 立即触发结局5（全局生效，无论当前处于什么节点）
+  if(state.giveUpCount >= 3){
+    state.flags.endByGiveUp = true;  // 标记此结局，供能力图鉴强制称号
+    closeMask('dedPanel');
+    closeMask('invPanel');
+    closeMask('tlPanel');
+    toast('🚨 推理社能力受强烈质疑，你们被作为嫌疑人扣留监督……', 3500);
+    setTimeout(()=>playNode('end_detain'), 1600);
+    return;
+  }
+  const node = SCRIPT[state.nodeId];
+  if(!node || !node.requireDed){
+    closeMask('dedPanel');
+    toast(`😔 放弃推理（第 ${state.giveUpCount} 次）· 推理值 -1；请注意：累计 3 次将有严重后果`, 2800);
+    return;
+  }
+  toast(`😔 放弃推理（第 ${state.giveUpCount} 次）· 推理值 -1；请注意：累计 3 次将有严重后果`, 2800);
+  // 自动完成当前节点要求的推论（如果线索足够）
+  let autoDone = null;
+  for(const dedId of node.requireDed){
+    const d = DEDUCTIONS.find(x => x.id === dedId);
+    if(!d) continue;
+    if(d.need.every(id => state.clues.includes(id)) && !state.deduced.includes(dedId)){
+      state.deduced.push(dedId);
+      autoDone = d;
+      break;
+    }
+  }
+  if(autoDone){
+    toast(`🤖 系统协助完成推论：${autoDone.title}`, 3000);
+    // 推论成功增加观察力（系统协助同样适用）
+    state.stats.obs = (state.stats.obs||0) + 1;
+    (state.statLog.obs = state.statLog.obs || []).push({reason:`系统协助·${autoDone.title}`, amount:1, time:Date.now()});
+    if(autoDone.reward){
+      if(autoDone.reward.ded){
+        state.stats.ded += autoDone.reward.ded;
+        state.statLog.ded.push({reason:`系统协助·${autoDone.title}`, amount:autoDone.reward.ded, time:Date.now()});
+      }
+      if(autoDone.reward.lu){
+        state.stats.lu += autoDone.reward.lu;
+        state.statLog.lu.push({reason:`系统协助·${autoDone.title}`, amount:autoDone.reward.lu, time:Date.now()});
+      }
+      if(autoDone.reward.shen){
+        state.stats.shen += autoDone.reward.shen;
+        state.statLog.shen.push({reason:`系统协助·${autoDone.title}`, amount:autoDone.reward.shen, time:Date.now()});
+      }
+      if(autoDone.reward.int){
+        state.stats.int = (state.stats.int||0) + autoDone.reward.int;
+        (state.statLog.int = state.statLog.int || []).push({reason:`系统协助·${autoDone.title}`, amount:autoDone.reward.int, time:Date.now()});
+      }
+      if(autoDone.reward.cou){
+        state.stats.cou = (state.stats.cou||0) + autoDone.reward.cou;
+        (state.statLog.cou = state.statLog.cou || []).push({reason:`系统协助·${autoDone.title}`, amount:autoDone.reward.cou, time:Date.now()});
+      }
+    }
+    setStatsUI();
+    closeMask('dedPanel');
+    toast('剧情推进…', 2000);
+    setTimeout(()=>playNode(node.next), 900);
+  } else {
+    // 线索不足：玩家在关键推理节点放弃且无法补齐线索，推理社协查资质受质疑被扣留
+    // 语义上属于"无法破案→拘留"，走 end_detain 而非 end_bad（end_bad 是"指认错陈老板"）
+    state.flags.endByGiveUp = true;
+    toast('😔 线索不足，推理失败……推理社协查资质受质疑，你们被扣留监督', 3500);
+    closeMask('dedPanel');
+    setTimeout(()=>playNode('end_detain'), 1500);
+  }
+}
+function renderSlots(){
+  const placeholders = ['槽位 1（点击线索填入）','槽位 2（点击线索填入）','槽位 3','槽位 4','槽位 5'];
+  for(let i=0;i<5;i++){
+    const s = $('slot'+i);
+    if(slots[i]){
+      s.className = 'slot filled';
+      s.innerHTML = `<b style="font-size:13px">${CLUES[slots[i]].n}</b><small style="color:#4a89dc;margin-top:3px">点击移除</small>`;
+      s.onclick = ()=>{ slots[i] = null; renderSlots(); renderClueList(); };
+    } else {
+      s.className = 'slot';
+      s.textContent = placeholders[i];
+      s.onclick = null;
+    }
+  }
+  $('dedCount').textContent = slots.filter(Boolean).length;
+}
+// 线索→需要它的所有推论（用于判断线索是否已完全消耗）
+const CLUE_TO_DEDS = {};
+DEDUCTIONS.forEach(d => {
+  if(d.need && d.need[0] !== '__AUTO__'){
+    d.need.forEach(cid => {
+      if(!CLUE_TO_DEDS[cid]) CLUE_TO_DEDS[cid] = [];
+      CLUE_TO_DEDS[cid].push(d.id);
+    });
+  }
+});
+// 线索已消耗：所有需要它的推论都已合成（线索背包仍保留，仅从推论面板移除，避免重复堆砌）
+function isClueConsumed(clueId){
+  const deds = CLUE_TO_DEDS[clueId] || [];
+  if(deds.length === 0) return false;
+  return deds.every(dedId => state.deduced.includes(dedId));
+}
+// 渲染已合成推论列表（合成后常驻面板，全部完成后面板只剩此区）
+function renderDedDoneList(){
+  const box = $('dedDoneList');
+  if(!box) return;
+  box.innerHTML = '';
+  if(state.deduced.length === 0){
+    box.innerHTML = '<div style="color:#4a89dc;font-size:12px">尚未合成任何推论。</div>';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  state.deduced.forEach(dedId => {
+    const d = DEDUCTIONS.find(x => x.id === dedId);
+    if(!d) return;
+    const item = document.createElement('div');
+    item.className = 'ded-done-item';
+    item.innerHTML = `<b style="color:#7fd8a0">✓ ${d.title}</b><small style="color:#9a8ec0;display:block;margin-top:3px;line-height:1.5">${d.desc}</small>`;
+    frag.appendChild(item);
+  });
+  box.appendChild(frag);
+}
+function renderClueList(){
+  const list = $('clueList');
+  list.innerHTML = '';
+  // 过滤掉已完全消耗的线索（所有相关推论都已合成）；线索仍保留在线索背包中
+  const available = state.clues.filter(id => !isClueConsumed(id));
+  if(available.length === 0){
+    list.innerHTML = '<div style="grid-column:1/-1;color:#4a89dc">所有线索已用于推论合成，查看下方已合成推论。</div>';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  available.forEach(id=>{
+    const c = CLUES[id];
+    if(!c) return;
+    const item = document.createElement('div');
+    item.className = 'clue-item' + (slots.includes(id) ? ' selected' : '');
+    item.dataset.clueId = id;
+    item.innerHTML = `<h5>${c.n}</h5><p>${c.d}</p>`;
+    frag.appendChild(item);
+  });
+  list.appendChild(frag);
+}
+function clearSlots(){ slots = [null,null,null,null,null]; renderSlots(); renderClueList(); }
+// 自动解锁推论：need 标记为 ['__AUTO__'] 的推论，由前置推论全部完成后自动解锁
+// 例如 d7_evidence_all 在 d1+d2+d3+d9 全部完成后自动解锁
+const AUTO_DED_PREREQ = {
+  d7_evidence_all: ['d1_motive_zhou','d2_framed_lin','d3_false_witness','d9_cause'],
+};
+function checkAutoDeductions(){
+  for(const [autoId, prereq] of Object.entries(AUTO_DED_PREREQ)){
+    if(state.deduced.includes(autoId)) continue;
+    if(prereq.every(id => state.deduced.includes(id))){
+      state.deduced.push(autoId);
+      const d = DEDUCTIONS.find(x => x.id === autoId);
+      if(d){
+        // 推论成功增加观察力（d7 自动解锁同样适用）
+        state.stats.obs = (state.stats.obs||0) + 1;
+        (state.statLog.obs = state.statLog.obs || []).push({reason:`推论·${d.title}`, amount:1, time:Date.now()});
+        if(d.reward?.ded){
+          state.stats.ded += d.reward.ded;
+          state.statLog.ded.push({reason:`推论·${d.title}`, amount:d.reward.ded, time:Date.now()});
+        }
+        if(d.reward?.lu){
+          state.stats.lu += d.reward.lu;
+          state.statLog.lu.push({reason:`推论·${d.title}`, amount:d.reward.lu, time:Date.now()});
+        }
+        if(d.reward?.shen){
+          state.stats.shen += d.reward.shen;
+          state.statLog.shen.push({reason:`推论·${d.title}`, amount:d.reward.shen, time:Date.now()});
+        }
+        if(d.reward?.int){
+          state.stats.int = (state.stats.int||0) + d.reward.int;
+          (state.statLog.int = state.statLog.int || []).push({reason:`推论·${d.title}`, amount:d.reward.int, time:Date.now()});
+        }
+        if(d.reward?.cou){
+          state.stats.cou = (state.stats.cou||0) + d.reward.cou;
+          (state.statLog.cou = state.statLog.cou || []).push({reason:`推论·${d.title}`, amount:d.reward.cou, time:Date.now()});
+        }
+        setStatsUI(); doGlow();
+        const dc = $('dedDoneCount'); if(dc) dc.textContent = state.deduced.length;
+        // 刷新推论面板：d7 加入已合成区（d7 不消耗线索，无需刷新线索列表）
+        renderDedDoneList();
+        toast(`⚡ 自动解锁推论：${d.title}`, 2800);
+        showDeductionResultModal(d);
+      }
+      return; // 每次只处理一条，等玩家关闭弹窗后 continueAfterDed 会再次检查
+    }
+  }
+}
+function doDeduce(){
+  const picked = slots.filter(Boolean).sort();
+  if(picked.length < 2){ toast('至少选择 2 条线索'); return; }
+  let matched = null;
+  for(const d of DEDUCTIONS){
+    const need = [...d.need].sort();
+    if(need.length === picked.length && need.every((v,i)=>v===picked[i])){
+      matched = d; break;
+    }
+  }
+  const result = $('dedResult');
+  // 失败分支
+  if(!matched){
+    state.dedFailCount = (state.dedFailCount||0) + 1;
+    $('dedFailCount').textContent = state.dedFailCount;
+    let html = `<div class="ded-result fail"><h4>❌ 推论失败（第 ${state.dedFailCount} 次）</h4><p>这些线索似乎没有直接关联……再想想？</p></div>`;
+    // 失败6次后在「失败x次」右侧浮现【查看提示】按钮，并显示【放弃推理】按钮
+    if(state.dedFailCount >= 6){
+      $('dedHintBtn').style.display = 'inline-block';
+      $('giveUpBtn').style.display = 'inline-block';
+      html += `<p style="color:#c8bde8;font-size:12.5px;margin-top:6px">💡 已达 6 次失败，可点击右上「查看提示」或右下「放弃推理」</p>`;
+    }
+    result.innerHTML = html;
+    doShake();
+    return;
+  }
+  // 已完成过
+  if(state.deduced.includes(matched.id)){
+    result.innerHTML = `<div class="ded-result"><h4>✅ 此推论已完成过</h4><p>${matched.desc}</p></div>`;
+    return;
+  }
+  // 成功：记录并展示具体结论
+  state.deduced.push(matched.id);
+  // 推论成功增加观察力
+  state.stats.obs = (state.stats.obs||0) + 1;
+  (state.statLog.obs = state.statLog.obs || []).push({reason:`推论·${matched.title}`, amount:1, time:Date.now()});
+  if(matched.reward){
+    if(matched.reward.ded){
+      state.stats.ded += matched.reward.ded;
+      state.statLog.ded.push({reason:`推论·${matched.title}`, amount:matched.reward.ded, time:Date.now()});
+    }
+    if(matched.reward.lu){
+      state.stats.lu += matched.reward.lu;
+      state.statLog.lu.push({reason:`推论·${matched.title}`, amount:matched.reward.lu, time:Date.now()});
+    }
+    if(matched.reward.shen){
+      state.stats.shen += matched.reward.shen;
+      state.statLog.shen.push({reason:`推论·${matched.title}`, amount:matched.reward.shen, time:Date.now()});
+    }
+    if(matched.reward.int){
+      state.stats.int = (state.stats.int||0) + matched.reward.int;
+      (state.statLog.int = state.statLog.int || []).push({reason:`推论·${matched.title}`, amount:matched.reward.int, time:Date.now()});
+    }
+    if(matched.reward.cou){
+      state.stats.cou = (state.stats.cou||0) + matched.reward.cou;
+      (state.statLog.cou = state.statLog.cou || []).push({reason:`推论·${matched.title}`, amount:matched.reward.cou, time:Date.now()});
+    }
+  }
+  setStatsUI(); doGlow();
+  $('dedDoneCount').textContent = state.deduced.length;
+  // 刷新推论面板：已消耗线索从列表消失，新推论加入已合成区
+  renderClueList();
+  renderDedDoneList();
+  // 弹出画布内结论弹窗（限定在 16:9 画布居中）
+  showDeductionResultModal(matched);
+}
+function showDeductionResultModal(matched){
+  $('dedRTitle').textContent = matched.title || '';
+  $('dedRDesc').textContent = matched.desc || '';
+  const rewardBox = $('dedRReward');
+  const parts = [];
+  if(matched.reward?.ded) parts.push(`<span style="color:#ffd36e">🧠 +${matched.reward.ded} 推理</span>`);
+  if(matched.reward?.lu)  parts.push(`<span style="color:#4a89dc">🔍 +${matched.reward.lu} 洞察</span>`);
+  if(matched.reward?.shen) parts.push(`<span style="color:#ffd0e6">💬 +${matched.reward.shen} 共情</span>`);
+  if(parts.length === 0) parts.push('<span style="color:#4a89dc">（无数值奖励）</span>');
+  rewardBox.innerHTML = parts.join('');
+  $('dedRProgress').textContent = `已推论 ${state.deduced.length} / ${DEDUCTION_TOTAL} 条`;
+  $('dedResultCanvasModal').classList.add('show');
+}
+// 失败6次后点击「查看提示」弹窗，展示线索组合建议
+function showDedHint(){
+  const undone = DEDUCTIONS.filter(d => !state.deduced.includes(d.id));
+  // 分三类：自动解锁型（__AUTO__）、已有足够线索可尝试的、还缺线索的
+  const autoDeds = undone.filter(d => d.need.includes('__AUTO__'));
+  const manualDeds = undone.filter(d => !d.need.includes('__AUTO__'));
+  const canTry = manualDeds.filter(d => d.need.every(id => state.clues.includes(id)));
+  const missing = manualDeds.filter(d => !d.need.every(id => state.clues.includes(id)));
+  let hintHtml = '';
+  if(autoDeds.length > 0){
+    hintHtml += '<p style="color:#7fff7f;font-size:12.5px;margin-bottom:6px">🔗 自动解锁类（完成前置推论后自动获得）：</p><ul style="padding-left:18px;line-height:1.8">';
+    hintHtml += autoDeds.map(d=>`<li><b style="color:#7fff7f">${d.title}</b>：${d.hint||'完成前置推论后自动解锁'}</li>`).join('');
+    hintHtml += '</ul>';
+  }
+  if(canTry.length > 0){
+    hintHtml += '<p style="color:#c8bde8;font-size:12.5px;margin:8px 0 6px">✅ 你已有足够线索可尝试的推论：</p><ul style="padding-left:18px;line-height:1.8">';
+    hintHtml += canTry.map(d=>`<li><b style="color:#ffd36e">${d.title}</b>：${d.hint||''}</li>`).join('');
+    hintHtml += '</ul>';
+  }
+  if(missing.length > 0){
+    const missingInfo = missing.map(d => {
+      const need = d.need.filter(id => !state.clues.includes(id));
+      const names = need.map(id => CLUES[id]?.n || id).join('、');
+      return `<li><b style="color:#ffd36e">${d.title}</b>：还缺 ${names}</li>`;
+    }).join('');
+    hintHtml += '<p style="color:#c8bde8;font-size:12.5px;margin:8px 0 6px">🔒 还需收集线索才能尝试：</p><ul style="padding-left:18px;line-height:1.8">' + missingInfo + '</ul>';
+  }
+  if(!hintHtml) hintHtml = '<p style="color:#4a89dc">所有推论已完成，无需提示。</p>';
+  $('dedHintBody').innerHTML = hintHtml;
+  $('dedHintModal').classList.add('show');
+}
+function continueAfterDed(){
+  closeMask('dedResultCanvasModal');
+  // 先检查是否有自动解锁的推论（如完成 d9 后自动解锁 d7 铁证链闭）
+  // 若有，弹出自动解锁弹窗，等玩家再次关闭后再判断 requireDed
+  const before = state.deduced.length;
+  checkAutoDeductions();
+  if(state.deduced.length > before){
+    // 已弹出新的自动解锁弹窗，等玩家关闭后再次进入 continueAfterDed 判断 requireDed
+    return;
+  }
+  const node = SCRIPT[state.nodeId];
+  if(node && node.requireDed){
+    const ok = node.requireDed.some(id => state.deduced.includes(id));
+    if(ok){
+      closeMask('dedPanel');
+      toast('关键推论已达成，剧情推进…', 2000);
+      setTimeout(()=>playNode(node.next), 700);
+      return;
+    }
+  }
+  // 非关键推论或条件未满足：关闭弹窗回到推论面板
+  toast('继续组合线索进行推理…', 1500);
+  openDeduction();
+}
+function waitDeduction(needAny, nextId){
+  const ok = needAny.some(id => state.deduced.includes(id));
+  if(ok){
+    setTimeout(()=>playNode(nextId), 600);
+  } else {
+    // 未完成时直接打开推论面板，面板内已有简洁提示，避免重复弹窗
+    openDeduction();
+  }
+}
+
+/* =========================================================
+   时间线排序（画布内面板）
+   ========================================================= */
+let tlOrder = [], tlDoneCallback = null, tlHintShown = false;
+function openTimeline(cb){
+  tlDoneCallback = cb;
+  tlOrder = [...TIMELINE].sort(()=>Math.random()-.5);
+  tlHintShown = false;
+  const btn = $('tlHintBtn');
+  if(btn) btn.style.display = '';
+  renderTl();
+  $('tlPanel').classList.add('show');
+}
+// 默认隐藏时间节点（"HH:MM  "前缀），点击查看提示后恢复
+function tlStripTime(txt){
+  if(tlHintShown) return txt;
+  return txt.replace(/^\d{1,2}:\d{2}\s+/, '');
+}
+function tlShowHint(){
+  tlHintShown = true;
+  renderTl();
+  const btn = $('tlHintBtn');
+  if(btn) btn.style.display = 'none';
+  toast('已显示时间节点作为提示', 1600);
+}
+function renderTl(){
+  const c = $('tlCards');
+  c.innerHTML = '';
+  tlOrder.forEach((txt, i)=>{
+    const d = document.createElement('div');
+    d.className = 'tl-card';
+    d.innerHTML = `
+      <h4>第 ${i+1} 步</h4>
+      <p>${tlStripTime(txt)}</p>
+      <div class="tl-btns">
+        <button class="btn" onclick="tlMove(${i},-1)">↑ 上移</button>
+        <button class="btn" onclick="tlMove(${i},1)">↓ 下移</button>
+      </div>`;
+    c.appendChild(d);
+  });
+}
+function tlMove(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= tlOrder.length) return;
+  [tlOrder[i], tlOrder[j]] = [tlOrder[j], tlOrder[i]];
+  renderTl();
+}
+function checkTimeline(){
+  const ok = tlOrder.length === TIMELINE.length && tlOrder.every((v,i)=>v===TIMELINE[i]);
+  if(!ok){
+    let firstWrong = -1;
+    for(let i=0;i<TIMELINE.length;i++){
+      if(tlOrder[i] !== TIMELINE[i]){ firstWrong = i; break; }
+    }
+    doShake();
+    if(state.stats.ded >= 5){
+      toast(`⚠ 顺序有误：第 ${firstWrong+1} 步不正确。（推理点≥5 获得提示）`, 3200);
+    } else {
+      toast('⚠ 时间线顺序错误，请重新梳理。', 2500);
+    }
+    return;
+  }
+  toast('✅ 时间线还原成功！真相浮出水面……', 2800);
+  doGlow();
+  state.stats.ded = (state.stats.ded||0) + 1;
+  state.stats.lu = (state.stats.lu||0) + 1;
+  state.stats.shen = (state.stats.shen||0) + 1;
+  state.stats.obs = (state.stats.obs||0) + 2;
+  state.statLog.ded.push({reason:'时间线还原', amount:1, time:Date.now()});
+  state.statLog.lu.push({reason:'时间线还原', amount:1, time:Date.now()});
+  state.statLog.shen.push({reason:'时间线还原', amount:1, time:Date.now()});
+  state.statLog.obs.push({reason:'时间线还原', amount:2, time:Date.now()});
+  setStatsUI();
+  closeMask('tlPanel');
+  const cb = tlDoneCallback;
+  tlDoneCallback = null;
+  if(cb) setTimeout(cb, 900);
+}
+
+/* =========================================================
+   结局 + 图鉴
+   ========================================================= */
+function showEnding(id){
+  const e = ENDINGS[id];
+  if(!e){ toast('未知结局：' + id); return; }
+  const gal = loadGallery();
+  if(!gal.includes(id)){
+    gal.push(id);
+    localStorage.setItem(GALLERY_KEY, JSON.stringify(gal));
+  }
+  $('endTag').textContent = e.tag;
+  $('endTitle').textContent = e.title;
+  $('endText').textContent = e.desc;
+  stopRain(); doGlow();
+  $('endingMask').classList.add('show');
+  // 通关后删除存档，并隐藏"继续游戏"按钮
+  localStorage.removeItem(SAVE_KEY);
+  const resumeBtn = document.querySelector('.cc-menu .btn.primary');
+  if(resumeBtn){ resumeBtn.style.display = 'none'; }
+}
+function returnToCover(){
+  // 当前处于结局节点时：showEnding 已删存档+隐藏继续游戏，这里不能重写存档，
+  // 否则会把结局节点写入 SAVE_KEY，导致"继续游戏"复活并陷入结局死循环。
+  const curNode = SCRIPT[state.nodeId];
+  const atEnding = !!(curNode && curNode.end);
+  if(!atEnding){
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  const cc = $('canvasCover');
+  // 显示进度信息（结局节点不显示进度，避免误导）
+  const progress = $('ccProgress');
+  if(atEnding){
+    progress.innerHTML = `📍 本局已结束 · 已解锁结局：${ENDINGS[curNode.end] ? ENDINGS[curNode.end].title : ''}`;
+  } else {
+    progress.innerHTML = `📍 当前：${SCENE_NAMES[state.nodeId] || state.nodeId} · 💖${state.stats.lu} 🎨${state.stats.shen} 🧠${state.stats.ded} · 已收集 ${state.clues.length} 条线索`;
+  }
+  cc.classList.add('show');
+  // 暂停BGM
+  bgmAudio.pause();
+  // 更新"继续游戏"按钮显隐：结局节点强制隐藏，否则按存档是否存在判断
+  const hasSave = !atEnding && !!localStorage.getItem(SAVE_KEY);
+  const resumeBtn = document.querySelector('.cc-menu .btn.primary');
+  if(resumeBtn){ resumeBtn.style.display = hasSave ? '' : 'none'; }
+  toast(atEnding ? '已回到首页，本局已结束' : '已回到首页，点击「继续游戏」返回', 2500);
+}
+function resumeGame(){
+  // 从 localStorage 读取存档并恢复 state（页面刷新/重开时内存state已重置，必须从存档恢复）
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      // 逐项合并，保留当前state中存档未记录的默认字段
+      state.nodeId = saved.nodeId || 'start';
+      state.heroine = saved.heroine || state.heroine;
+      state.stats = Object.assign({lu:0,shen:0,ded:0,obs:0,int:0,cou:0}, saved.stats || {});
+      state.statLog = Object.assign({lu:[],shen:[],ded:[],obs:[],int:[],cou:[]}, saved.statLog || {});
+      state.clues = saved.clues || [];
+      state.deduced = saved.deduced || [];
+      state.flags = saved.flags || {};
+      state.dedFailCount = saved.dedFailCount || 0;
+      state.giveUpCount = saved.giveUpCount || 0;
+      state.branchLog = saved.branchLog || [];
+      state.branchSnapshots = saved.branchSnapshots || {};
+      state.questionLog = saved.questionLog || [];
+      state._triggeredNode3 = saved._triggeredNode3 || false;
+      state._triggeredNode7 = saved._triggeredNode7 || false;
+    }
+  }catch(e){ /* 存档损坏则使用内存默认值 */ }
+  // 如果存档节点是start或无效，提示走新游戏
+  const nodeId = state.nodeId;
+  const node = SCRIPT[nodeId];
+  if(!nodeId || nodeId === 'start' || !node){
+    toast('⚠ 存档为空或不完整，请点击「🎬 新游戏」开始', 3200);
+    return;
+  }
+  $('canvasCover').classList.remove('show');
+  // 显示数值栏
+  $('statsBar').classList.add('show');
+  $('gameInner').classList.add('stats-on');
+  setStatsUI();
+  // 直接跳转到存档节点
+  playNode(nodeId);
+  toast('✅ 已恢复进度：' + (SCENE_NAMES[nodeId] || nodeId), 2000);
+}
+// 结局图鉴 UI 已移除（按用户要求）；loadGallery 保留供 showEnding 记录已解锁结局
+function loadGallery(){
+  try{ return JSON.parse(localStorage.getItem(GALLERY_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function backToMenu(){
+  closeMask('endingMask');
+  stopBgm();
+  hidePortrait();
+  hideChoices();
+  clearHotspots();
+  stopRain();
+  showScreen('cover');
+}
+
+/* =========================================================
+   存档 / 读档
+   ========================================================= */
+function saveGame(){
+  if(state.nodeId === 'start' && state.clues.length === 0){
+    toast('尚未开始游戏，无需存档');
+    return;
+  }
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  toast('✅ 游戏已存档');
+  doGlow();
+}
+function loadGame(){
+  const s = localStorage.getItem(SAVE_KEY);
+  if(!s){ toast('❌ 没有可读取的存档'); return; }
+  try{
+    state = JSON.parse(s);
+    if(!state.stats) state.stats = {lu:0,shen:0,ded:0};
+    // 老存档迁移：补齐 obs/int/cou
+    if(state.stats.obs == null) state.stats.obs = 0;
+    if(state.stats.int == null) state.stats.int = 0;
+    if(state.stats.cou == null) state.stats.cou = 0;
+    if(!state.clues) state.clues = [];
+    if(!state.deduced) state.deduced = [];
+    if(!state.flags) state.flags = {};
+    if(state.dedFailCount == null) state.dedFailCount = 0;
+    if(state.giveUpCount == null) state.giveUpCount = 0;
+    if(!state.statLog) state.statLog = {lu:[],shen:[],ded:[]};
+    ['obs','int','cou'].forEach(k => { if(!state.statLog[k]) state.statLog[k] = []; });
+    if(!state.branchLog) state.branchLog = [];
+    if(!state.branchSnapshots) state.branchSnapshots = {};
+    showScreen('game');
+    setStatsUI();
+    playNode(state.nodeId);
+    toast('✅ 读取存档成功');
+  } catch(e){
+    toast('存档损坏：' + e.message);
+  }
+}
+
+/* =========================================================
+   新游戏 + 自定义姓名
+   ========================================================= */
+function startNewGame(){
+  $('nameInput').value = '';
+  $('nameModal').classList.add('show');
+  setTimeout(()=>$('nameInput').focus(), 100);
+}
+function confirmName(){
+  let n = $('nameInput').value.trim();
+  if(!n) n = '林小鹿';
+  if(n.length > 5) n = n.slice(0, 5);
+  closeMask('nameModal');
+  // 兜底：若首页能力图鉴仍开着，新游戏前关闭，避免覆盖游戏画面
+  const abOv = $('abilityOverlay');
+  if(abOv) abOv.style.display = 'none';
+  abilityFromEnding = false;
+  state = {
+    heroine: n,
+    nodeId: 'start',
+    stats: { lu:0, shen:0, ded:0, obs:0, int:0, cou:0 },
+    statLog: { lu:[], shen:[], ded:[], obs:[], int:[], cou:[] },
+    clues: [],
+    deduced: [],
+    flags: {},
+    dedFailCount: 0,
+    giveUpCount: 0,
+    branchLog: [],
+    branchSnapshots: {},
+    questionLog: [],
+    _triggeredNode3: false,
+    _triggeredNode7: false,
+  };
+  setStatsUI();
+  showScreen('game');
+  toast(`✨ 欢迎加入推理社，${n}！`, 2400);
+  setTimeout(()=>playNode('start'), 700);
+}
+$('nameInput').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') confirmName();
+});
+
+/* =========================================================
+   全局暴露（供 inline onclick 调用）
+   ========================================================= */
+/* =========================================================
+   分支脉络图（XMind 全屏风格）
+   ========================================================= */
+let branchViewState = { scale: 1, offsetX: 0, offsetY: 0 };
+
+function openBranchDiagram(){
+  const log = state.branchLog;
+  const empty = $('branchEmpty');
+  if(log.length === 0){
+    empty.style.display = 'flex';
+  } else {
+    empty.style.display = 'none';
+  }
+  $('branchFullscreen').classList.add('show');
+  // drawBranchTree 末尾会调用 fitBranchView 自动定位放大
+  drawBranchTree();
+}
+function closeBranchFullscreen(){
+  $('branchFullscreen').classList.remove('show');
+}
+function branchZoom(factor){
+  branchViewState.scale *= factor;
+  branchViewState.scale = Math.max(0.3, Math.min(3, branchViewState.scale));
+  applyBranchTransform();
+}
+function branchReset(){
+  branchViewState = { scale: 1, offsetX: 0, offsetY: 0 };
+  applyBranchTransform();
+}
+function applyBranchTransform(){
+  const svg = $('branchSvg');
+  if(!svg) return;
+  const g = svg.querySelector('#branchNodes');
+  const l = svg.querySelector('#branchLines');
+  const transform = `translate(${branchViewState.offsetX},${branchViewState.offsetY}) scale(${branchViewState.scale})`;
+  if(g) g.setAttribute('transform', transform);
+  if(l) l.setAttribute('transform', transform);
+}
+
+function drawBranchTree(){
+  const nodesGroup = $('branchNodes');
+  const linesGroup = $('branchLines');
+  nodesGroup.innerHTML = '';
+  linesGroup.innerHTML = '';
+
+  // 始终隐藏空状态：遍历 SCRIPT 画全节点树
+  $('branchEmpty').style.display = 'none';
+
+  // 横向布局：主干从左到右排列，选项在主干下方分叉，结局继续向下延伸
+  const nodeW = 220, nodeH = 80, gapX = 120, gapY = 60, optGapY = 30;
+  const mainY = 240, startX = 100;
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  // 主干节点顺序（横向）
+  const mainTrunk = ['start','node2','node_dinner','node_fire','node3','Q1','node4','node5','node6','node7','node8','Q2','ext','Q3','Q4','node9b','node9','node10','node11'];
+
+  // 已做选择集合（连线高亮 + logIdx 查找）
+  const madeEdges = new Set();
+  state.branchLog.forEach(item => { madeEdges.add(item.nodeId + '|' + item.choiceIdx); });
+
+  // 数值映射（lu=推理力、ded=洞察力，与 ABILITY_DEFS 一致）
+  const effNames = {lu:'🔍推理',shen:'💬共情',ded:'🧠洞察',flag:'⚑标记',obs:'👁观察',int:'⚡直觉',cou:'🛡勇气'};
+  const formatEff = (eff) => {
+    return Object.entries(eff || {}).filter(([k,v])=>v).map(([k,v])=>`${effNames[k]||k}+${v}`).join(' ');
+  };
+
+  // 结局类型映射（truth=好结局，bad/xu/detain=坏结局，nor=普通结局）
+  const endMeta = (endKey) => {
+    if(endKey === 'truth') return { type:'goodend', icon:'⭐' };
+    if(endKey === 'bad')   return { type:'badend',  icon:'💀' };
+    if(endKey === 'xu')    return { type:'badend',  icon:'💀' };
+    if(endKey === 'detain') return { type:'badend', icon:'💀' };
+    return { type:'norend', icon:'⏸' };  // nor
+  };
+
+  // SVG 连线辅助
+  const drawLine = (x1, y1, x2, y2, opts) => {
+    opts = opts || {};
+    const line = document.createElementNS(svgNS, 'path');
+    const mx = (x1 + x2) / 2;
+    const d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+    line.setAttribute('d', d);
+    line.setAttribute('fill', 'none');
+    if(opts.ending){
+      line.setAttribute('stroke', opts.endingColor || '#e27b7b');
+      line.setAttribute('stroke-width', '2.8');
+      line.setAttribute('opacity', opts.dashed ? '0.5' : '0.9');
+      if(opts.dashed) line.setAttribute('stroke-dasharray', '6,4');
+    } else if(opts.current){
+      line.setAttribute('stroke', '#7fff7f');
+      line.setAttribute('stroke-width', '3');
+      line.setAttribute('opacity', '0.95');
+      line.setAttribute('filter', 'drop-shadow(0 0 3px #7fff7f)');
+    } else if(opts.dashed){
+      line.setAttribute('stroke', '#2a4a7a');
+      line.setAttribute('stroke-width', '1.6');
+      line.setAttribute('opacity', '0.55');
+      line.setAttribute('stroke-dasharray', '6,4');
+    } else {
+      line.setAttribute('stroke', '#6b60a0');
+      line.setAttribute('stroke-width', '2.2');
+      line.setAttribute('opacity', '0.65');
+    }
+    linesGroup.appendChild(line);
+  };
+
+  // 结局支线绘制（node11 的 4 个选项分叉到结局）—— 横向版：结局在选项下方延伸
+  const drawEndingChain = (choice, optX, optY, srcExplored, isMade) => {
+    const node12Id = choice.next;
+    const node12 = SCRIPT[node12Id];
+    if(!node12) return;
+    const endX = optX;                       // 结局节点与选项同 x（对齐）
+    const endY = optY + nodeH + gapY;        // 结局在选项下方
+
+    // 选项 → node12 连线（垂直向下）：未选择的选项用虚线
+    drawLine(optX, optY + nodeH/2, endX, endY - nodeH/2, { current: isMade, dashed: !isMade });
+
+    // node12 节点
+    const n12Explored = isExplored(node12Id);
+    if(n12Explored){
+      drawNode({
+        x: endX, y: endY, w: nodeW, h: nodeH,
+        title: SCENE_NAMES[node12Id] || node12Id,
+        sub: node12.choices ? `${node12.choices.length} 个选项` : '→ 结局',
+        type: node12.choices ? 'choice' : 'scene',
+        logIdxs: [], isCurrent: state.nodeId === node12Id, effectText: ''
+      });
+    } else {
+      drawNode({
+        x: endX, y: endY, w: nodeW, h: nodeH,
+        title: '??? 未走过的分支', sub: '场景待探索',
+        type: 'unvisited', logIdxs: [], isCurrent: state.nodeId === node12Id,
+        effectText: '', unvisited: true
+      });
+      return;
+    }
+
+    // node12 后续
+    if(node12.choices){
+      // node12_zhou: 2 个 choices → end_truth
+      // 子选项在 node12 正下方水平展开，避免与 node12 本体重叠
+      const subY = endY + nodeH + gapY;
+      const subOffset = nodeW/2 + gapX/2;
+      const subOptXs = [endX - subOffset, endX + subOffset];
+      const endTruthX = endX;
+      const endTruthY = subY + nodeH + gapY;
+
+      node12.choices.forEach((sc, j) => {
+        const sx = subOptXs[j];
+        const subIsMade = madeEdges.has(node12Id + '|' + j);
+        // node12 → 子选项连线（水平贝塞尔）
+        drawLine(endX - nodeW/2, endY, sx + nodeW/2, subY, { current: subIsMade, dashed: !subIsMade });
+        // 子选项节点：只有玩家选择过的才显示内容
+        if(subIsMade){
+          drawNode({
+            x: sx, y: subY, w: nodeW, h: nodeH,
+            title: sc.t.substring(0, 24),
+            sub: formatEff(sc.eff) || '（无数值变化）',
+            type: 'choice', logIdxs: [], isCurrent: false,
+            effectText: '→ ' + (SCENE_NAMES[sc.next] || sc.next)
+          });
+        } else {
+          drawNode({
+            x: sx, y: subY, w: nodeW, h: nodeH,
+            title: '??? 未走过的分支', sub: '未选择的分支',
+            type: 'unvisited', logIdxs: [], isCurrent: false,
+            effectText: '', unvisited: true
+          });
+        }
+        // 子选项 → end_truth 连线（垂直向下汇聚）
+        drawLine(sx, subY + nodeH/2, endTruthX, endTruthY - nodeH/2, {
+          ending: true, endingColor: '#7fff7f',
+          dashed: !subIsMade
+        });
+      });
+
+      // end_truth 节点
+      const e = ENDINGS.truth;
+      const em = endMeta('truth');
+      if(isExplored('end_truth')){
+        drawNode({
+          x: endTruthX, y: endTruthY, w: nodeW, h: nodeH,
+          title: em.icon + ' ' + e.title, sub: e.tag,
+          type: 'ending ' + em.type, endType: em.type,
+          logIdxs: [], isCurrent: state.nodeId === 'end_truth', effectText: ''
+        });
+      } else {
+        drawNode({
+          x: endTruthX, y: endTruthY, w: nodeW, h: nodeH,
+          title: '??? 结局', sub: '结局待探索',
+          type: 'unvisited', logIdxs: [], isCurrent: state.nodeId === 'end_truth',
+          effectText: '', unvisited: true
+        });
+      }
+    } else if(node12.next){
+      // node12_lin/bad/xu → end_*，结局在 node12 正下方
+      const endId = node12.next;
+      const endNode = SCRIPT[endId];
+      if(!endNode || !endNode.end) return;
+      const endKey = endNode.end;
+      const endX2 = endX;
+      const endY2 = endY + nodeH + gapY;
+      const em = endMeta(endKey);
+      const endColor = em.type === 'goodend' ? '#7fff7f' : (em.type === 'badend' ? '#e27b7b' : '#ffd36e');
+
+      // node12 → end 连线（垂直向下）
+      drawLine(endX, endY + nodeH/2, endX2, endY2 - nodeH/2, {
+        ending: true, endingColor: endColor,
+        dashed: !isExplored(endId)
+      });
+
+      // end 节点
+      if(isExplored(endId)){
+        const e = ENDINGS[endKey];
+        drawNode({
+          x: endX2, y: endY2, w: nodeW, h: nodeH,
+          title: em.icon + ' ' + e.title, sub: e.tag,
+          type: 'ending ' + em.type, endType: em.type,
+          logIdxs: [], isCurrent: state.nodeId === endId, effectText: ''
+        });
+      } else {
+        drawNode({
+          x: endX2, y: endY2, w: nodeW, h: nodeH,
+          title: '??? 结局', sub: '结局待探索',
+          type: 'unvisited', logIdxs: [], isCurrent: state.nodeId === endId,
+          effectText: '', unvisited: true
+        });
+      }
+    }
+  };
+
+  // 第一遍：计算主干节点 X 坐标（横向排列）
+  const nodeX = {};
+  let xCur = startX;
+  mainTrunk.forEach((nid, i) => {
+    nodeX[nid] = xCur;
+    xCur += nodeW + gapX;  // 选项在主干下方分叉，不占额外水平空间
+  });
+
+  // 第二遍：画主干节点（y=mainY 水平排列）+ 水平连线
+  mainTrunk.forEach((nid, i) => {
+    const px = nodeX[nid];
+    const explored = isExplored(nid);
+    const sn = SCRIPT[nid];
+
+    if(nid === 'start'){
+      drawNode({
+        x: px, y: mainY, w: nodeW, h: nodeH,
+        title: '起点', sub: '封面 → 新游戏', type: 'start',
+        logIdxs: [], isCurrent: state.nodeId === 'start', effectText: ''
+      });
+    } else if(explored){
+      const title = SCENE_NAMES[nid] || nid;
+      const sub = sn && sn.choices ? `${sn.choices.length} 个选项` : '';
+      const type = sn && sn.choices ? 'choice' : 'scene';
+      drawNode({
+        x: px, y: mainY, w: nodeW, h: nodeH,
+        title, sub, type, logIdxs: [],
+        isCurrent: state.nodeId === nid, effectText: ''
+      });
+    } else {
+      drawNode({
+        x: px, y: mainY, w: nodeW, h: nodeH,
+        title: '??? 未走过的分支', sub: '场景待探索',
+        type: 'unvisited', logIdxs: [], isCurrent: state.nodeId === nid,
+        effectText: '', unvisited: true
+      });
+    }
+
+    // 主干水平连线
+    if(i < mainTrunk.length - 1){
+      const nextX = nodeX[mainTrunk[i+1]];
+      drawLine(px + nodeW/2, mainY, nextX - nodeW/2, mainY);
+    }
+  });
+
+  // 第三遍：画 choices 节点的选项（主干下方分叉）+ 汇聚连线 + 结局支线
+  mainTrunk.forEach((nid, i) => {
+    const sn = SCRIPT[nid];
+    if(!sn || !sn.choices) return;
+    const px = nodeX[nid];
+    const choices = sn.choices;
+    const nOpts = choices.length;
+    const isLastNode = (nid === 'node11');
+
+    // 选项坐标分配：普通节点垂直排列，node11（结局分支）水平展开并下移避免与前节点选项重叠
+    const optStartY = mainY + nodeH/2 + gapY;
+    let optXs, optYs;
+    if(isLastNode){
+      // 水平展开：4 个选项分布在 px 左右，间距 nodeW + gapX
+      const totalW = nOpts * nodeW + (nOpts - 1) * gapX;
+      const leftmost = px - totalW/2 + nodeW/2;
+      optXs = [];
+      for(let k = 0; k < nOpts; k++) optXs.push(leftmost + k * (nodeW + gapX));
+      // 下移：留出空间给 node10 等前序节点的选项（node10 有 2 个选项占约 2*nodeH + optGapY）
+      const prevNodeChoiceHeight = 2 * (nodeH + optGapY) + gapY;
+      optYs = new Array(nOpts).fill(optStartY + prevNodeChoiceHeight);
+    } else {
+      // 垂直排列：与主干同 x
+      optXs = new Array(nOpts).fill(px);
+      optYs = [];
+      for(let k = 0; k < nOpts; k++) optYs.push(optStartY + k * (nodeH + optGapY));
+    }
+
+    // 汇聚目标 X：下一个主干节点（node11 无汇聚，走结局支线）
+    const convergeX = isLastNode ? null : nodeX[mainTrunk[i+1]];
+
+    choices.forEach((choice, k) => {
+      const optY = optYs[k];
+      const optX = optXs[k];
+      const edgeKey = nid + '|' + k;
+      const isMade = madeEdges.has(edgeKey);
+      const srcExplored = isExplored(nid);
+
+      // 选项节点：只有玩家实际选择过的选项才显示内容和分数加成
+      // 未选择过的选项（含到达节点但没选的）一律显示 ??? 隐藏
+      if(isMade){
+        const effText = formatEff(choice.eff);
+        const logIdx = state.branchLog.findIndex(it => it.nodeId === nid && it.choiceIdx === k);
+        const logIdxs = logIdx >= 0 ? [logIdx] : [];
+        const resultName = SCENE_NAMES[choice.next] || choice.next;
+
+        drawNode({
+          x: optX, y: optY, w: nodeW, h: nodeH,
+          title: choice.t.substring(0, 24), sub: effText || '（无数值变化）',
+          type: 'choice', logIdxs: logIdxs, isCurrent: false,
+          effectText: '→ ' + resultName,
+          nodePayload: logIdx >= 0 ? {
+            kind: 'choice',
+            sceneName: SCENE_NAMES[nid] || nid,
+            choiceText: choice.t,
+            resultScene: resultName,
+            effect: choice.eff || {},
+            logIdx: logIdx
+          } : null
+        });
+      } else {
+        // 未走过的选项：隐藏选项文字和分数加成
+        const hiddenSub = srcExplored ? '未选择的分支' : '选项与结果待探索';
+        drawNode({
+          x: optX, y: optY, w: nodeW, h: nodeH,
+          title: '??? 未走过的分支', sub: hiddenSub,
+          type: 'unvisited', logIdxs: [], isCurrent: false,
+          effectText: '', unvisited: true
+        });
+      }
+
+      // 主干→选项 垂直连线
+      drawLine(px, mainY + nodeH/2, optX, optY - nodeH/2, {
+        current: isMade,
+        dashed: !isMade
+      });
+
+      // 选项→下一主干 水平贝塞尔汇聚
+      if(convergeX !== null){
+        drawLine(optX + nodeW/2, optY, convergeX - nodeW/2, mainY, {
+          current: isMade,
+          dashed: !isMade
+        });
+      }
+
+      // node11 的结局支线
+      if(isLastNode){
+        drawEndingChain(choice, optX, optY, srcExplored, isMade);
+      }
+    });
+  });
+
+  fitBranchView();
+}
+
+// 空存档/未开始时：从 start 向前走到第一个 choices 节点，渲染主干 + 所有选项为 ??? 占位
+function layoutUnvisitedFromStart(startX, startY, nodeW, nodeH, gapX, gapY){
+  // 沿 next 走到第一个有 choices 的节点（最多 20 步防死循环）
+  let cur = 'start';
+  const seen = new Set();
+  let choicesNode = null;
+  let steps = 0;
+  while(cur && !seen.has(cur) && steps < 20){
+    seen.add(cur);
+    const n = SCRIPT[cur];
+    if(!n) break;
+    if(n.choices){ choicesNode = { id: cur, node: n }; break; }
+    cur = n.next;
+    steps++;
+  }
+  if(!choicesNode) return; // 整条线无 choices，不渲染额外节点
+
+  // 主干：从起点到 choices 节点之间画一条连线 + 场景节点（???）
+  const backboneX = startX + nodeW/2 + gapX + nodeW/2;
+  const backboneY = startY;
+  const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+  const mx = startX + gapX/2 + nodeW/2;
+  line.setAttribute('d', `M${startX},${startY} C${mx},${startY} ${mx},${backboneY} ${backboneX},${backboneY}`);
+  line.setAttribute('stroke', '#6b60a0');
+  line.setAttribute('stroke-width', '2');
+  line.setAttribute('stroke-dasharray', '6,4');
+  line.setAttribute('fill', 'none');
+  line.setAttribute('opacity', '0.6');
+  $('branchLines').appendChild(line);
+  drawNode({
+    x: backboneX, y: backboneY, w: nodeW, h: nodeH,
+    title: SCENE_NAMES[choicesNode.id] || choicesNode.id,
+    sub: '选项待探索',
+    type: 'unvisited', logIdxs: [], isCurrent: false,
+    effectText: '', unvisited: true
+  });
+
+  // 渲染该 choices 节点的所有选项为 ??? 分支
+  const choices = choicesNode.node.choices;
+  const total = choices.length;
+  const totalH = total * (nodeH + gapY) - gapY;
+  let yStart = backboneY - totalH/2;
+  choices.forEach((ch, i) => {
+    const cy = yStart + i * (nodeH + gapY) + nodeH/2;
+    const cx = backboneX + nodeW/2 + gapX + nodeW/2;
+    const cline = document.createElementNS('http://www.w3.org/2000/svg','path');
+    const cmx = backboneX + gapX/2 + nodeW/2;
+    cline.setAttribute('d', `M${backboneX},${backboneY} C${cmx},${backboneY} ${cmx},${cy} ${cx},${cy}`);
+    cline.setAttribute('stroke', '#2a4a7a');
+    cline.setAttribute('stroke-width', '1.6');
+    cline.setAttribute('stroke-dasharray', '6,4');
+    cline.setAttribute('fill', 'none');
+    cline.setAttribute('opacity', '0.55');
+    $('branchLines').appendChild(cline);
+    drawNode({
+      x: cx, y: cy, w: nodeW, h: nodeH,
+      title: '??? 未走过的分支',
+      sub: '选项与结果待探索',
+      type: 'unvisited', logIdxs: [], isCurrent: false,
+      effectText: '', unvisited: true
+    });
+  });
+}
+
+// 自动适配剧情脉络图视野：对 节点rect + 每条Bezier路径做采样，算外包盒后+15% padding
+function fitBranchView(){
+  const svg = $('branchSvg');
+  if(!svg) return;
+  const nodes = svg.querySelectorAll('#branchNodes .branch-node-group');
+  const paths = svg.querySelectorAll('#branchLines path');
+  if(nodes.length === 0 && paths.length === 0) return;
+
+  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  const consider = (x,y)=>{
+    if(x < minX) minX = x; if(y < minY) minY = y;
+    if(x > maxX) maxX = x; if(y > maxY) maxY = y;
+  };
+
+  // 节点（根据 transform + 固定尺寸）
+  nodes.forEach(g=>{
+    const t = g.getAttribute('transform') || '';
+    const m = t.match(/translate\(\s*([-\d.]+)[,\s]+([-\d.]+)\s*\)/);
+    if(!m) return;
+    const tx = parseFloat(m[1]), ty = parseFloat(m[2]);
+    const wAttr = g.getAttribute('data-w') || 220;
+    const hAttr = g.getAttribute('data-h') || 80;
+    const w = parseFloat(wAttr), h = parseFloat(hAttr);
+    consider(tx, ty);
+    consider(tx + w, ty + h);
+  });
+
+  // Bezier 曲线：按 t=0..1 步长 0.02 采样 51 点，保证不会切到弧线
+  const sampleCubic = (dStr) => {
+    const re = /M([-\d.]+),([-\d.]+)\s*C([-\d.]+),([-\d.]+)\s+([-\d.]+),([-\d.]+)\s+([-\d.]+),([-\d.]+)/;
+    const mm = dStr.match(re);
+    if(!mm) return;
+    const x0=+mm[1],y0=+mm[2],x1=+mm[3],y1=+mm[4],x2=+mm[5],y2=+mm[6],x3=+mm[7],y3=+mm[8];
+    for(let i=0;i<=50;i++){
+      const t = i/50;
+      const u = 1-t;
+      const x = u*u*u*x0 + 3*u*u*t*x1 + 3*u*t*t*x2 + t*t*t*x3;
+      const y = u*u*u*y0 + 3*u*u*t*y1 + 3*u*t*t*y2 + t*t*t*y3;
+      consider(x, y);
+    }
+  };
+  paths.forEach(p=>sampleCubic(p.getAttribute('d') || ''));
+
+  if(!isFinite(minX)) return;
+  const w0 = Math.max(1, maxX - minX), h0 = Math.max(1, maxY - minY);
+  const padX = w0 * 0.18, padY = h0 * 0.18;
+  const vbX = minX - padX, vbY = minY - padY;
+  const vbW = w0 + padX * 2, vbH = h0 + padY * 2;
+  svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+  branchViewState = { scale: 1, offsetX: 0, offsetY: 0 };
+  applyBranchTransform();
+}
+
+function drawNode(data){
+  const { x, y, w, h, title, sub, type, logIdxs, isCurrent, effectText, unvisited, endType, nodePayload } = data;
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('class', 'branch-node-group');
+  g.setAttribute('transform', `translate(${x - w/2}, ${y - h/2})`);
+  g.setAttribute('data-w', String(w));
+  g.setAttribute('data-h', String(h));
+
+  // 当前节点：额外脉冲光晕
+  if(isCurrent){
+    const pulse = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    pulse.setAttribute('class', 'node-pulse animate');
+    pulse.setAttribute('x', -3); pulse.setAttribute('y', -3);
+    pulse.setAttribute('width', w + 6); pulse.setAttribute('height', h + 6);
+    pulse.setAttribute('rx', '16'); pulse.setAttribute('ry', '16');
+    // 让脉冲以节点中心为原点缩放
+    pulse.setAttribute('transform-origin', `${w/2}px ${h/2}px`);
+    pulse.style.transformOrigin = `${w/2}px ${h/2}px`;
+    g.appendChild(pulse);
+  }
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  let cls = 'node-rect ' + (type || '').trim();
+  if(endType) cls += ' ' + endType;
+  if(isCurrent) cls += ' current';
+  rect.setAttribute('class', cls);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '12'); rect.setAttribute('ry', '12');
+  g.appendChild(rect);
+
+  // 标题
+  const t1 = document.createElementNS('http://www.w3.org/2000/svg','text');
+  t1.setAttribute('class', 'node-text-title');
+  t1.setAttribute('x', 10); t1.setAttribute('y', 22);
+  t1.textContent = isCurrent ? '📍 ' + title : title;
+  g.appendChild(t1);
+
+  // 选项 / 副标题
+  const t2 = document.createElementNS('http://www.w3.org/2000/svg','text');
+  t2.setAttribute('class', 'node-text-choice');
+  t2.setAttribute('x', 10); t2.setAttribute('y', 44);
+  t2.textContent = sub || '';
+  g.appendChild(t2);
+
+  // 效果文字
+  if(effectText){
+    const t3 = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t3.setAttribute('class', 'node-text-info');
+    t3.setAttribute('x', 10); t3.setAttribute('y', 62);
+    t3.textContent = effectText;
+    g.appendChild(t3);
+  }
+
+  // 底部提示
+  if(type === 'choice' && logIdxs && logIdxs.length > 0){
+    const t4 = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t4.setAttribute('class', 'node-text-info');
+    t4.setAttribute('x', 10); t4.setAttribute('y', h - 5);
+    t4.textContent = '📖 点我查看详情';
+    g.appendChild(t4);
+  }
+
+  // 点击事件：choice → 先弹详情（防误触+展示完整未截断选项）
+  if(type === 'choice' && logIdxs && logIdxs.length > 0 && nodePayload){
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', (e)=>{
+      e.stopPropagation && e.stopPropagation();
+      showNodeModal(nodePayload);
+    });
+  }
+
+  $('branchNodes').appendChild(g);
+}
+
+/* ============ C1：节点详情弹窗 + 确认回跳 ============ */
+let _pendingJumpLogIdx = -1;
+function showNodeModal(payload){
+  if(!payload) return;
+  _pendingJumpLogIdx = (payload.logIdx == null) ? -1 : payload.logIdx;
+  $('bnmTitle').textContent = payload.resultScene || '—';
+  $('bnmScene').textContent = '（当时所处场景：' + (payload.sceneName || '—') + '）';
+  $('bnmChoice').textContent = payload.choiceText || '—';
+  const effBox = $('bnmEffects'); effBox.innerHTML = '';
+  const eff = payload.effect || {};
+  const effNames = {lu:'🔍 推理',shen:'💬 共情',ded:'🧠 洞察',flag:'⚑ 标记',obs:'👁 观察',int:'⚡ 直觉',cou:'🛡 勇气'};
+  const tags = Object.entries(eff).filter(([k,v])=>v).map(([k,v])=>{
+    return `<span class="bnm-effect-tag">${effNames[k]||k} ${v>0?'+':''}${v}</span>`;
+  });
+  if(tags.length === 0) tags.push('<span class="bnm-effect-tag" style="opacity:.75">（无数值变化）</span>');
+  effBox.innerHTML = tags.join('');
+  $('bnmResult').textContent = payload.resultScene || '—';
+  const jumpBtn = $('bnmJumpBtn');
+  if(_pendingJumpLogIdx < 0){ jumpBtn.style.display = 'none'; }
+  else { jumpBtn.style.display = ''; }
+  $('branchNodeModal').classList.add('show');
+}
+function closeNodeModal(){
+  $('branchNodeModal').classList.remove('show');
+  _pendingJumpLogIdx = -1;
+}
+function confirmNodeModalJump(){
+  const idx = _pendingJumpLogIdx;
+  closeNodeModal();
+  if(idx >= 0) jumpToBranch(idx);
+}
+
+/* ============ D1：未探索分支显示开关（localStorage 持久化）============ */
+const UNV_KEY = 'stormIsle_unvisitedShow_v1';
+function getUnvisitedPref(){
+  // 默认显示所有分支（含未探索），未走的用灰色+???，玩家走过即恢复展现
+  try {
+    const v = localStorage.getItem(UNV_KEY);
+    return v === null ? true : v === '1';
+  }
+  catch(e){ return true; }
+}
+function setUnvisitedPref(v){
+  try { localStorage.setItem(UNV_KEY, v ? '1' : '0'); } catch(e){}
+}
+function toggleUnvisited(checked){
+  setUnvisitedPref(!!checked);
+  drawBranchTree();
+}
+
+function jumpToBranch(logIdx){
+  const item = state.branchLog[logIdx];
+  if(!item) return;
+  const snapshot = state.branchSnapshots[item.nodeId];
+  if(!snapshot){
+    toast('该节点无快照，无法回跳');
+    return;
+  }
+  state.stats = {...snapshot.stats};
+  state.statLog = JSON.parse(JSON.stringify(snapshot.statLog));
+  state.clues = [...snapshot.clues];
+  state.deduced = [...snapshot.deduced];
+  state.flags = {...snapshot.flags};
+  state.dedFailCount = snapshot.dedFailCount || 0;
+  state.giveUpCount = snapshot.giveUpCount || 0;
+  state.questionLog = [...(snapshot.questionLog || [])];
+  state._triggeredNode3 = snapshot._triggeredNode3 || false;
+  state._triggeredNode7 = snapshot._triggeredNode7 || false;
+  state.nodeId = item.nodeId;
+  state.currentLogIdx = logIdx;
+  // 不再截断branchLog，保留完整历史
+  closeNodeModal();
+  closeBranchFullscreen();
+  closeMask('dedPanel');
+  closeMask('invPanel');
+  closeMask('tlPanel');
+  closeMask('clueModal');
+  // 直接隐藏能力图鉴并重置来源标记，避免调用 closeAbilityChart 触发 backToMenu 副作用
+  const abOv = $('abilityOverlay');
+  if(abOv) abOv.style.display = 'none';
+  abilityFromEnding = false;
+  clearHotspots();
+  showScreen('game');
+  setStatsUI();
+  toast(`🔄 回跳到「${SCENE_NAMES[item.nodeId]||item.nodeId}」，重新选择选项`, 3000);
+  setTimeout(()=>playNode(item.nodeId), 800);
+}
+
+function resetBranchDiagram(){
+  if(confirm('确定清空所有脉络记录？（不影响当前存档）')){
+    state.branchLog = [];
+    state.branchSnapshots = {};
+    drawBranchTree();
+  }
+}
+
+// 拖拽平移
+const DEFAULT_STATE = {
+  heroine: '女主',
+  nodeId: 'start',
+  stats: { lu:0, shen:0, ded:0, obs:0, int:0, cou:0 },
+  statLog: { lu:[], shen:[], ded:[], obs:[], int:[], cou:[] },
+  clues: [],
+  deduced: [],
+  flags: {},
+  dedFailCount: 0,
+  giveUpCount: 0,
+  branchLog: [],
+  branchSnapshots: {},
+  questionLog: [],
+  _triggeredNode3: false,
+  _triggeredNode7: false,
+};
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  // sticky toast 关闭：玩家任意点击画布空白/toast本身就关闭关键提示，避免遮挡+确保看完
+  const toastEl = $('toast');
+  const closeSticky = (e)=>{
+    if(toastEl.classList.contains('sticky') && toastEl.classList.contains('show')){
+      // 点击 toast 本身立即关；点击其他位置也关
+      toastEl.classList.remove('show','sticky');
+    }
+  };
+  toastEl.addEventListener('click', closeSticky);
+
+  // ============ 作品介绍模块初始化 ============
+  // ↓↓↓ GoatCounter + jsonbin 配置（已填入，无需改）↓↓↓
+  const GOATCOUNTER_CODE = 'xd0119';
+  const JSONBIN_BIN_ID   = '6a918489f5f4af5e294dc58f';
+  const JSONBIN_API_KEY  = '$2a$10$9ogTCYadgG4JrptgTJPZcO0LZj/cQD/5Kzu7yU6C5PeNKM6wBiMRa';
+  // ↑↑↑ GoatCounter + jsonbin 配置 ↑↑↑
+
+  // --- 1. GoatCounter：累计游玩统计 ---
+  (function initGoatCounter(){
+    try{
+      // 本地兜底（未联网/GoatCounter 返回之前）
+      const localPlayed = parseInt(localStorage.getItem('stormIsle_played')||'0') || 0;
+      const inc = localPlayed + 1;
+      localStorage.setItem('stormIsle_played', inc);
+      $('ciPlayed').textContent = localPlayed;
+
+      if(GOATCOUNTER_CODE && !GOATCOUNTER_CODE.includes('your_')){
+        const endpoint = 'https://' + GOATCOUNTER_CODE + '.goatcounter.com/count';
+        // 直接走像素上报（避开 count.js，广告拦截器不会拦 1x1 gif）
+        const payload = encodeURIComponent(JSON.stringify({
+          p: '/storm-isle-played',
+          r: document.referrer || null
+        }));
+        const img = new Image();
+        img.src = endpoint + '?p=' + payload; // no onerror / onload，静默即可
+
+        // 10s 后用 JSONP 调一次拿真实累计（GoatCounter API 支持 callback=?）
+        // 如果 JSONP/CORS 失败就保持 localStorage 兜底值
+        setTimeout(async ()=>{
+          try{
+            const total = await new Promise((resolve, fail)=>{
+              const cbName = 'gc_total_cb_' + Date.now();
+              window[cbName] = function(d){
+                try{ resolve((d && d.total && d.total.count) || 0); }catch(_){ resolve(0); }
+                setTimeout(()=>{ try { delete window[cbName]; }catch(e){} }, 100);
+              };
+              const s2 = document.createElement('script');
+              s2.onerror = ()=>{ fail(new Error('gc jsonp blocked')); };
+              s2.src = 'https://' + GOATCOUNTER_CODE + '.goatcounter.com/api/v0/stats/total/period?daily&r=month&callback=' + cbName;
+              document.head.appendChild(s2);
+              setTimeout(()=>fail(new Error('gc timeout')), 8000);
+            });
+            if(total > 0){
+              const final = Math.max(total, inc);
+              $('ciPlayed').textContent = final.toLocaleString();
+            }
+          }catch(e){
+            // 被广告拦截/跨域失败 → 保持 localStorage 数字不变
+            $('ciPlayed').textContent = inc.toLocaleString();
+          }
+        }, 10000);
+      } else {
+        $('ciPlayed').textContent = inc.toLocaleString();
+      }
+    }catch(e){
+      try{ $('ciPlayed').textContent = (parseInt(localStorage.getItem('stormIsle_played')||'0')||0).toLocaleString(); }catch(_){}
+    }
+  })();
+
+  // --- 2. jsonbin：玩家评分 + 5星组件 ---
+  (function initRating(){
+    const ratingNumEl = document.querySelector('#ciRatingNum');
+    if(!ratingNumEl) return;
+
+    const stars = document.querySelectorAll('.ci-rating-star');
+    const label = document.querySelector('.ci-rating-label');
+    let voted = localStorage.getItem('stormIsle_rated') ? parseInt(localStorage.getItem('stormIsle_rated')) : 0;
+
+    async function refreshRating(){
+      if(JSONBIN_BIN_ID && !JSONBIN_BIN_ID.includes('your_')){
+        try{
+          // public bin: GET 不需要 X-Master-Key（避免浏览器 OPTIONS 预检被卡）
+          const resp = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest', {
+            method: 'GET',
+            headers: { 'X-Bin-Meta': 'false' }
+          });
+          if(!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+          let data; try { data = await resp.json(); } catch(e){ throw new Error('JSON parse fail'); }
+          const r = (data && data.record) ? data.record : null;
+          if(r && typeof r.sum === 'number' && typeof r.count === 'number' && r.count > 0){
+            const avg = (r.sum / r.count).toFixed(1);
+            ratingNumEl.textContent = avg;
+            if(label) label.textContent = `基于 ${r.count} 人评价`;
+            return;
+          } else {
+            throw new Error('record invalid: ' + JSON.stringify(data));
+          }
+        }catch(e){
+          console.warn('[rating] refreshRating failed:', e && e.message ? e.message : e);
+        }
+      }
+      // 兜底：静态显示
+      ratingNumEl.textContent = ratingNumEl.textContent || '10.0';
+      if(label && !label.textContent) label.textContent = '基于 1 人评价';
+    }
+
+    // 点亮星级（只读模式，voted=0时悬停可选）
+    function lightStars(n, keep=false){
+      stars.forEach((st,i)=>{
+        if(i < n) st.classList.add('on');
+        else if(!keep) st.classList.remove('on');
+      });
+    }
+    if(voted > 0) lightStars(voted, true);
+
+    stars.forEach(st=>{
+      const v = parseInt(st.dataset.value);
+      st.addEventListener('mouseenter', ()=>{ if(!voted) lightStars(v); });
+      st.addEventListener('mouseleave', ()=>{ if(!voted) lightStars(0); });
+      st.addEventListener('click', async ()=>{
+        if(voted){ toast('你已经评分过啦，谢谢支持！', 2000); return; }
+        voted = v;
+        localStorage.setItem('stormIsle_rated', v);
+        lightStars(v, true);
+
+        // 提交到 jsonbin（乐观更新 + PUT）
+        if(JSONBIN_BIN_ID && !JSONBIN_BIN_ID.includes('your_')){
+          try{
+            // 1) 读最新数据（public bin: GET 不带 X-Master-Key）
+            const getResp = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID + '/latest', {
+              method: 'GET',
+              headers: { 'X-Bin-Meta': 'false' }
+            });
+            if(!getResp.ok) throw new Error('GET HTTP ' + getResp.status);
+            const rec = (await getResp.json()).record;
+            if(typeof rec.sum !== 'number') rec.sum = 10;
+            if(typeof rec.count !== 'number') rec.count = 1;
+            rec.sum += v; rec.count += 1;
+            // 2) 写回
+            const putResp = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_API_KEY
+              },
+              body: JSON.stringify(rec)
+            });
+            if(!putResp.ok) throw new Error('PUT HTTP ' + putResp.status);
+            const avg = (rec.sum/rec.count).toFixed(1);
+            ratingNumEl.textContent = avg;
+            if(label) label.textContent = `基于 ${rec.count} 人评价`;
+            toast('评分成功，感谢支持 💯', 1800);
+          }catch(e){
+            toast('评分已记录 💯', 1800);
+          }
+        } else {
+          toast('评分已记录 💯', 1800);
+        }
+      });
+    });
+
+    refreshRating();
+  })();
+
+  // Tab 切换
+  document.querySelectorAll('.ci-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.ci-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.ci-tab-pane').forEach(p=>p.classList.remove('active'));
+      tab.classList.add('active');
+      const pane = $('ci-tab-' + tab.dataset.tab);
+      if(pane) pane.classList.add('active');
+    });
+  });
+
+  // 预填结局 Tab
+  const ciEndingsPane = $('ci-tab-endings');
+  if(ciEndingsPane){
+    const list = document.createElement('div');
+    list.className = 'ci-endings-list';
+    Object.entries(ENDINGS).forEach(([id,end])=>{
+      const unlocked = !!localStorage.getItem('stormIsle_explored_' + id);
+      const item = document.createElement('div');
+      item.className = 'ci-ending-item ' + (unlocked ? 'unlocked' : 'locked');
+      item.innerHTML = `<h4>${end.tag || ''} ${end.title}</h4><p>${unlocked ? end.desc : '尚未解锁'}</p>`;
+      list.appendChild(item);
+    });
+    ciEndingsPane.appendChild(list);
+  }
+
+  // 预填角色 Tab（含死者陈茉莉 + 女主/陆/沈改用 jpg）
+  const ciCharsPane = $('ci-tab-chars');
+  if(ciCharsPane){
+    const jpgOverride = {
+      hero:  'assets/characters/heroine_main.jpg',
+      lu:    'assets/characters/lu_president_final.jpg',
+      shen:  'assets/characters/shen_classmate_main.jpg',
+      chen:  'assets/characters/npc_chen_boss.jpg',
+      lin:   'assets/characters/npc_lin_author.jpg',
+      zhou:  'assets/characters/npc_zhou_editor.jpg',
+      xu:    'assets/characters/npc_xu_housekeeper.png',  // 只有 png，兜底
+    };
+    const charsWithDead = Object.assign({
+      molly: {
+        name:'陈茉莉', role:'死者·悬疑女作家',
+        img:'assets/characters/chen_molly_deceased.jpg',
+        bio:'悬疑出版界的传奇女作家，以「白茉莉档案」系列红遍全国。患有先天性心脏病，但性格强硬，无子女。'
+      }
+    }, CHARACTERS);
+
+    const list = document.createElement('div');
+    list.className = 'ci-chars-detailed';
+    Object.entries(charsWithDead).forEach(([key,c])=>{
+      // 女主/陆社长/沈翊然 + 4 嫌疑人 用 jpg（有 jpg 就用 jpg，png 留给立绘）
+      let img = c.img;
+      if(jpgOverride[key] && key !== 'xu') img = jpgOverride[key];
+      // 小传只放搜证前可知道的信息（杀机密信息截断）
+      let bio = c.bio || c.desc || '';
+      if(!c.bio){
+        const sensitiveKws = ['杀机','真凶','沉海','坐牢','2300万','自杀','儿子','日记','栽赃','高利贷','欠'];
+        const lines = bio.split(/。|；/).filter(l=>!sensitiveKws.some(k=>l.includes(k)));
+        bio = lines.join('。') + '。';
+      }
+      const item = document.createElement('div');
+      item.className = 'ci-char-detailed';
+      item.innerHTML = `
+        <div class="ci-char-portrait"><img src="${img}" alt="${c.name}" loading="lazy"></div>
+        <div class="ci-char-text">
+          <h4>${c.name} <span>${c.role}</span></h4>
+          <p>${bio}</p>
+        </div>`;
+      list.appendChild(item);
+    });
+    ciCharsPane.appendChild(list);
+  }
+  // ============ 作品介绍模块 end ============
+  // 数值栏 hover 事件委托：鼠标悬浮显示明细
+  const statsBar = $('statsBar');
+  if(statsBar){
+    statsBar.addEventListener('mouseover', e=>{
+      const item = e.target.closest('.stat-item[data-stat]');
+      if(item) showStatDetail(item.dataset.stat);
+    });
+    statsBar.addEventListener('mouseleave', ()=>{
+      hideStatDetail();
+    });
+  }
+  // 初始化：始终显示16:9画幅（gameScreen），画布内封面
+  $('gameScreen').classList.remove('hidden');
+  $('canvasCover').classList.add('show');
+  // 如果有存档，显示继续游戏按钮
+  const hasSave = !!localStorage.getItem(SAVE_KEY);
+  const resumeBtn = document.querySelector('.cc-menu .btn.primary');
+  if(resumeBtn){
+    resumeBtn.style.display = hasSave ? '' : 'none';
+  }
+  // 初始化BGM和雨效
+  playBgm('cover');
+  startRain($('coverRain'));
+  // 初始化分支图拖拽
+  const canvas = document.getElementById('branchCanvas');
+  if(canvas){
+    let isDragging = false, startX = 0, startY = 0;
+    canvas.addEventListener('mousedown', (e)=>{
+      isDragging = true; startX = e.clientX; startY = e.clientY;
+    });
+    canvas.addEventListener('mousemove', (e)=>{
+      if(!isDragging) return;
+      branchViewState.offsetX += (e.clientX - startX) * 0.5;
+      branchViewState.offsetY += (e.clientY - startY) * 0.5;
+      startX = e.clientX; startY = e.clientY;
+      applyBranchTransform();
+    });
+    canvas.addEventListener('mouseup', ()=> isDragging = false);
+    canvas.addEventListener('mouseleave', ()=> isDragging = false);
+    canvas.addEventListener('wheel', (e)=>{
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      branchZoom(factor);
+    }, { passive: false });
+  }
+  // 初始化状态
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  setStatsUI();
+});
+
+window.openBranchDiagram = openBranchDiagram;
+window.closeBranchFullscreen = closeBranchFullscreen;
+window.branchZoom = branchZoom;
+window.branchReset = branchReset;
+window.fitBranchView = fitBranchView;
+window.jumpToBranch = jumpToBranch;
+window.resetBranchDiagram = resetBranchDiagram;
+window.toggleUnvisited = toggleUnvisited;
+window.showNodeModal = showNodeModal;
+window.closeNodeModal = closeNodeModal;
+window.confirmNodeModalJump = confirmNodeModalJump;
+window.giveUpDeduction = giveUpDeduction;
+window.showDedHint = showDedHint;
+window.continueAfterDed = continueAfterDed;
+window.returnToCover = returnToCover;
+window.resumeGame = resumeGame;
+window.closeCharOverlay = closeCharOverlay;
+window.tlShowHint = tlShowHint;
+
+/* =========================================================
+   导出到 window
+   ========================================================= */
+window.tlMove = tlMove;
+window.openTimeline = openTimeline;
+window.checkTimeline = checkTimeline;
+window.toggleStatDetail = toggleStats;
+
+/* =========================================================
+   初始化
+   ========================================================= */
+window.addEventListener('load', ()=>{
+  renderCharGallery();
+  startRain($('coverRain'));
+  playBgm('cover');
+  setStatsUI();
+  // 兜底：首次点击时尝试启动 BGM（绕过自动播放限制）
+  document.addEventListener('click', ()=>{
+    if(bgmAudio.paused && currentBgm && !bgmMuted){
+      bgmAudio.play().catch(()=>{});
+    }
+  }, { once: false });
+});
+</script>
+</body>
+</html>
