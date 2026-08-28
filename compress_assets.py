@@ -59,7 +59,14 @@ def compress_png(path: Path):
     tmp = path.with_suffix('.tmp.png')
     try:
         with Image.open(path) as im:
-            has_alpha = (im.mode == 'RGBA') or ('A' in im.getbands())
+            # ========== 透明通道判断 ==========
+            # 1) mode == RGBA         -> 有A通道
+            # 2) 'A' in getbands()    -> 其他带A通道的模式
+            # 3) im.info['transparency']  ->  P/indexed模式 带 tRNS 透明调色板（最容易漏掉的情况！）
+            has_alpha = (im.mode == 'RGBA') \
+                        or ('A' in im.getbands()) \
+                        or (im.info.get('transparency') is not None)
+            # =================================
             # 立绘人物通常 1600px 高, 缩到 1000px 足够（浏览器显示最大 ~50% 画幅）
             MAX = 1000
             w,h = im.size
