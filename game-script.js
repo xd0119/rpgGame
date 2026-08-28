@@ -6,7 +6,7 @@ const CHARACTERS = {
   lu:   { name:'陆知珩', role:'推理社社长', img:'assets/characters/lu_president_final.png',
     desc:'高三男生，推理社社长，冷静理性，擅长演绎推理' },
   shen: { name:'沈翊然', role:'推理社社员', img:'assets/characters/shen_classmate_main.png',
-    desc:'高二男生，推理社舍友，感性温柔。陈茉莉亲姐姐陈兰的外孙' },
+    desc:'高二男生，推理社社员，感性温柔。陈茉莉亲姐姐陈兰的外孙' },
   chen: { name:'陈老板', role:'委托人·富商', img:'assets/characters/npc_chen_boss.png',
     desc:'陈茉莉侄子。推理社赞助商，今夜委托人' },
   lin:  { name:'林作者', role:'文艺作家', img:'assets/characters/npc_lin_author.png',

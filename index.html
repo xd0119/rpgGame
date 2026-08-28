@@ -424,10 +424,16 @@ button{font-family:inherit}
   border:1px solid #1a2d47;
 }
 .game-inner{position:absolute;inset:0;overflow:hidden}
+.bg-stage{position:absolute;inset:0;z-index:1;overflow:hidden;}
 .bg-img{
   position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;z-index:1;
+  object-fit:cover;
 }
+/* 双缓冲：前台不透明（正在显示），后台透明（解码中/过渡用） */
+.bg-front{opacity:1;z-index:1;}
+.bg-back {opacity:0;z-index:0;}
+/* 淡入动画：给即将显示的层加这个类，解码好了再上 */
+.bg-fade{transition: opacity .42s ease;}
 .bg-overlay{
   position:absolute;inset:0;z-index:2;pointer-events:none;
   background:rgba(0,0,0,.5);opacity:0;transition:opacity .4s ease;
@@ -1316,7 +1322,11 @@ button{font-family:inherit}
           </div>
         </div>
 
-        <img class="bg-img" id="bgImg" src="assets/backgrounds/bg01_mansion_outside.jpg" alt="场景">
+        <!-- 双缓冲背景：前台bg-front + 后台bg-back，交替淡入解码好的新背景，避免切换"跟不上"/闪屏 -->
+        <div class="bg-stage" id="bgStage">
+          <img class="bg-img bg-front" id="bgImgFront" src="assets/backgrounds/bg01_mansion_outside.jpg" alt="场景">
+          <img class="bg-img bg-back"  id="bgImgBack"  src="" alt="">
+        </div>
         <div class="bg-overlay" id="bgOverlay"></div>
         <img class="char-center" id="charCenter" src="assets/characters/heroine_main.png" alt="角色">
         <div class="char-group" id="charGroup"></div>
@@ -2185,7 +2195,7 @@ function hideStatDetail(){
 let typingTimer = null, typingDone = false, currentLines = [], lineIdx = 0;
 let pendingAfterLines = [], pendingThen = null;  // 选项后追加"嫌疑人回答"用
 
-function playNode(nodeId){
+async function playNode(nodeId){
   state.nodeId = nodeId;
   // 记录探索到 localStorage，供脉络树展示真实内容（否则灰色???）
   markExplored(nodeId);
@@ -2195,7 +2205,10 @@ function playNode(nodeId){
   if(node.bgm) playBgm(node.bgm);
   if(node.end){ showEnding(node.end); return; }
 
-  setBg(node.bg);
+  // ====== 双缓冲背景：必须等新背景解码+淡入完才推剧情，避免背景"慢半拍"
+  if(node.bg) await setBg(node.bg);
+  else await Promise.resolve();
+
   if(node.effect) applyEffect(node.effect);
   else stopRain();
 
@@ -2278,7 +2291,57 @@ function typeWriter(el, txt){
   }, 28);
 }
 
-function setBg(file){ $('bgImg').src = 'assets/backgrounds/' + file; }
+/* ===== 双缓冲背景切换：
+   1) 把新图片塞到"后台"层（不显示）→ 触发 onload=解码完成
+   2) 把后台层 swap 到"前台"淡入，原前台退到后台并清空
+   3) 返回 Promise，playNode 才知道"已经好了"可以推剧情
+*/
+let _bgLastFile = null;
+function setBg(file){
+  const src = 'assets/backgrounds/' + file;
+  // 完全相同的背景：直接 resolve
+  if(_bgLastFile === file) return Promise.resolve();
+  _bgLastFile = file;
+
+  const front = document.getElementById('bgImgFront');
+  const back  = document.getElementById('bgImgBack');
+  if(!front || !back){ return Promise.resolve(); }
+
+  // 后台层现在是空的，放新图进去
+  const backFirst = (front.classList.contains('bg-front'));
+  const hiddenLayer = backFirst ? back : front;    // 当前 z-index 低、opacity=0 的那张
+  const shownLayer  = backFirst ? front : back;    // 当前显示的那张
+
+  return new Promise((resolve) => {
+    let resolved = false;
+    const done = () => {
+      if(resolved) return;
+      resolved = true;
+      // swap 前后台类名，并做淡入过渡
+      hiddenLayer.classList.add('bg-fade');
+      shownLayer.classList.add('bg-fade');
+      // 强制回流再改透明度，保证 transition 生效
+      // eslint-disable-next-line no-unused-expressions
+      hiddenLayer.offsetWidth;
+      hiddenLayer.classList.remove('bg-back');  hiddenLayer.classList.add('bg-front');
+      shownLayer.classList.remove('bg-front'); shownLayer.classList.add('bg-back');
+      // 420ms 动画结束后清空"新后台"的 src，避免两张大图同时占内存
+      setTimeout(()=>{
+        shownLayer.classList.remove('bg-fade');
+        hiddenLayer.classList.remove('bg-fade');
+        shownLayer.removeAttribute('src');
+      }, 460);
+      resolve();
+    };
+
+    hiddenLayer.onload  = done;
+    hiddenLayer.onerror = done;   // 就算加载失败也放行，别卡死剧情
+    hiddenLayer.src = src;
+
+    // 兜底（图片从缓存命中时，有些浏览器可能不触发 onload）——最多 700ms 强制推进
+    setTimeout(done, 700);
+  });
+}
 
 $('gameInner').addEventListener('click', e=>{
   if(e.target.closest('.hotspot,.choices,.choice-btn,.canvas-tools,.stats-bar,.canvas-panel,.clue-item,.slot,.btn')) return;
