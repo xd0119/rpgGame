@@ -4282,7 +4282,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
             const rec = (rawData && rawData.record) ? rawData.record : rawData;
             if(typeof rec.sum !== 'number') rec.sum = 10;
             if(typeof rec.count !== 'number') rec.count = 1;
-            rec.sum += v; rec.count += 1;
+            // 星级 1~5 → 10 分制（×2），与 jsonbin 初始 sum=10 对齐
+            const score10 = v * 2;
+            rec.sum += score10; rec.count += 1;
             // 2) 写回（jsonbin 支持 CORS，X-Master-Key 是写入必需的）
             const putResp = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
               method: 'PUT',
