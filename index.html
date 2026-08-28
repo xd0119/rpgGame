@@ -877,6 +877,17 @@ button{font-family:inherit}
   display:none;align-items:center;justify-content:center;padding:20px 24px;
 }
 .clue-modal.show{display:flex;animation:fadeIn .3s ease}
+.clue-modal-close{
+  position:absolute;top:12px;right:14px;z-index:3;
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);
+  color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.clue-modal-close:hover,.clue-modal-close:active{
+  background:#e27b7b;border-color:#ff9a9a;transform:rotate(90deg);
+}
 .clue-modal-inner{
   max-width:420px;width:100%;
   background:linear-gradient(160deg,#1a2d47,#142236);
@@ -1350,38 +1361,68 @@ button{font-family:inherit}
   }
   .choice-btn{font-size:12.5px;padding:8px 12px;border-radius:8px}
 
-  /* 能力图鉴：强制全屏可滚动 */
+  /* 能力图鉴：手机端改 block 布局让内容自然堆叠滚动 */
   .ability-overlay{
-    flex-direction:column;gap:10px;
-    height:100vh;height:100dvh; /* dvh 解决 iOS 地址栏问题 */
-    max-height:none;
+    display:block;            /* 不用 flex，内容直接堆叠滚 */
+    height:100vh;height:100dvh;
     overflow-y:auto;overflow-x:hidden;
-    align-items:center;justify-content:flex-start;
-    padding:14px 12px 24px;
+    padding:14px 14px 28px;
   }
   .ability-overlay.ability-fixed{
     position:fixed;inset:0;
     height:100vh;height:100dvh;
     overflow-y:auto;overflow-x:hidden;
-    align-items:center;justify-content:flex-start;
+    padding:14px 14px 28px;
   }
-  .ability-left{flex:0 0 auto;height:auto;width:100%;align-items:center}
-  .ability-card{width:min(60vw,200px);aspect-ratio:3/4}
-  .ability-right{flex:0 0 auto;width:100%;display:flex;flex-direction:column;align-items:center}
+  .ability-close{
+    position:fixed;top:12px;right:14px;z-index:6;  /* fixed 让滚动时始终可见 */
+  }
+  .ability-left{
+    display:flex;justify-content:center;margin-bottom:10px;
+  }
+  .ability-card{width:min(52vw,180px);aspect-ratio:3/4}
+  .ability-right{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
   .ability-hex{
-    flex:0 0 auto;width:min(72vw,240px);height:min(72vw,240px);
+    flex:0 0 auto;width:min(68vw,230px);height:min(68vw,230px);
   }
   .ability-legend{
-    width:100%;max-width:min(92vw,320px);
+    width:100%;max-width:min(94vw,340px);
     grid-template-columns:repeat(2,1fr);
     gap:6px 8px;
   }
+  .ability-titles{
+    width:100%;max-width:min(94vw,340px);
+    flex:0 0 auto;               /* 手机端头衔列表也固定高度，由 ability-overlay 外层统一滚 */
+    max-height:28vh;overflow-y:auto;
+  }
   .ability-title-item{font-size:11.5px;padding:5px 8px}
   .ability-title-name{font-size:12px}
-  .ability-close{
-    position:sticky;top:0;align-self:flex-end;
-    margin-bottom:2px;z-index:2;
+  .ability-hint{font-size:11px;color:#3d6ba0;text-align:center;margin-top:4px}
+
+  /* 热点对话框区域：强制盖在 hotspot 之上（z-index:16 hotspot:7），防止底部热点被误点 */
+  .dialogue-box{z-index:25}
+
+  /* ============ 统一所有关闭按钮：右上角 ✕ 圆形 ============ */
+  .ability-close,
+  .clue-modal-close,
+  .ci-char-modal-close,
+  .ci-modal-close,
+  .cp-close{
+    width:36px;height:36px;border-radius:50%;
+    font-size:17px;line-height:1;
+    background:rgba(0,0,0,.55) !important;
+    border:1px solid rgba(255,255,255,.25) !important;
+    color:#fff !important;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    transition:transform .15s;
+    -webkit-tap-highlight-color:transparent;
   }
+  .clue-modal-close{  position:absolute;top:10px;right:10px;z-index:6}
+  .ci-char-modal-close{position:absolute;top:8px;right:8px;z-index:4}
+  .ci-modal-close{    position:absolute;top:10px;right:10px;z-index:3}
+  .cp-close{          position:absolute;top:8px;right:8px;z-index:4}
+  .ability-close{     position:fixed;top:10px;right:10px;z-index:6} /* fixed 让滚动时始终可见 */
 }
 </style>
 </head>
@@ -1615,6 +1656,7 @@ button{font-family:inherit}
 
         <!-- 画布内：线索放大弹窗 -->
         <div class="clue-modal" id="clueModal">
+          <button class="clue-modal-close" onclick="closeMask('clueModal')" aria-label="关闭">✕</button>
           <div class="clue-modal-inner">
             <img class="clue-modal-img" id="clueModalImg" src="" alt="线索">
             <div class="clue-modal-doc" id="clueModalDoc" style="display:none"></div>
@@ -2812,13 +2854,17 @@ function showHotspots(cfg){
   const arr = HOTSPOTS[cfg.bgKey] || [];
   const wrap = $('hotspots');
   wrap.innerHTML = '';
+  // 移动端：对话框约占底部 22%，y≥78 的热点自动上移到 72 避免被遮
+  const isMobile = window.matchMedia && window.matchMedia('(max-width:860px)').matches;
   arr.forEach(h=>{
     const isFake = !!h.fake;
     const c = isFake ? null : CLUES[h.id];
     const d = document.createElement('div');
     d.className = isFake ? 'hotspot show fake' : 'hotspot show';
+    let y = h.y;
+    if(isMobile && y >= 78) y = 72;
     d.style.left = h.x + '%';
-    d.style.top = h.y + '%';
+    d.style.top = y + '%';
     d.style.transform = 'translate(-50%, -50%)';
     if(!isFake && c && c.img){
       d.innerHTML = `<img class="clue-mini" src="${c.img}" alt="${c.n}">`;
@@ -2938,6 +2984,10 @@ function showClueDetail(id, picked){
   $('clueModalTip').textContent = picked ? '✓ 已收入背包' : '📖 背包中的线索';
   $('clueModalTip').style.color = picked ? '#7fff7f' : '#4a89dc';
   $('clueModal').classList.add('show');
+  // 点遮罩空白关闭（不是 inner 就关）
+  $('clueModal').onclick = (e) => {
+    if(e.target.id === 'clueModal') closeMask('clueModal');
+  };
 }
 
 /* =========================================================
