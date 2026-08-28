@@ -1215,8 +1215,8 @@ button{font-family:inherit}
               <div class="ci-stat-label">累计游玩</div>
             </div>
             <div class="ci-stat-card">
-              <div class="ci-stat-num ci-num-yellow" id="ciRatingNum">9.0</div>
-              <div class="ci-stat-label ci-rating-label">基于 73 人评价</div>
+              <div class="ci-stat-num ci-num-yellow" id="ciRatingNum">10.0</div>
+              <div class="ci-stat-label ci-rating-label">基于 1 人评价</div>
               <div class="ci-rating-stars">
                 <span class="ci-rating-star" data-value="1">★</span>
                 <span class="ci-rating-star" data-value="2">★</span>
@@ -3828,9 +3828,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
           console.warn('[rating] refreshRating failed:', e && e.message ? e.message : e);
         }
       }
-      // 兜底：静态显示
-      ratingNumEl.textContent = ratingNumEl.textContent || '10.0';
-      if(label && !label.textContent) label.textContent = '基于 1 人评价';
+      // 兜底：显示默认基准值（与 jsonbin 内 sum=10 count=1 对齐）
+      ratingNumEl.textContent = '10.0';
+      if(label) label.textContent = '基于 1 人评价';
     }
 
     // 点亮星级（只读模式，voted=0时悬停可选）
