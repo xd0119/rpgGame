@@ -907,12 +907,27 @@ button{font-family:inherit}
 }
 .canvas-modal-mask.show{display:flex;animation:fadeIn .28s ease}
 .canvas-modal{
+  position:relative;
   width:100%;max-width:440px;text-align:center;
+  max-height:88%;overflow-y:auto;
   background:linear-gradient(160deg,#1a2d47,#142236);
   border:2px solid #4a89dc;border-radius:14px;padding:22px 20px;
   box-shadow:0 14px 40px rgba(74,137,220,.32);
+  box-sizing:border-box;
 }
 .canvas-modal h3{color:#f5efff;margin-bottom:10px;font-size:18px}
+/* canvas-modal 右上角关闭按钮（通用） */
+.cm-close{
+  position:absolute;top:10px;right:12px;z-index:3;
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.22);
+  color:#fff;font-size:15px;font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;padding:0;
+  transition:all .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.cm-close:hover,.cm-close:active{background:#e27b7b;border-color:#ff9a9a;transform:rotate(90deg)}
 /* ============ 文档类线索（CSS 渲染，文字与剧本一致） ============ */
 .clue-modal-doc{
   width:100%;max-height:46vh;overflow:auto;padding:30px 28px 26px;
@@ -933,6 +948,72 @@ button{font-family:inherit}
 /* 威胁信：粗糙撕边感 */
 .doc-letter{background:linear-gradient(135deg,#ece0c0,#d8c89a);box-shadow:inset 0 0 30px rgba(80,60,30,.2);font-style:italic}
 .doc-letter .doc-body{text-indent:0;font-family:"KaiTi","STKaiti",serif;letter-spacing:1px}
+/* 假账底稿：米黄账册纸+红线装订感 */
+.doc-ledger{background:linear-gradient(180deg,#faf4e2,#f0e6c8);box-shadow:inset 2px 0 0 #c8b06a,inset 0 0 20px rgba(120,90,40,.08);border-left:2px solid #b08a3a;position:relative}
+.doc-ledger .doc-header{letter-spacing:4px}
+.doc-ledger .doc-body{font-family:"SimSun","STSong","宋体",serif;text-indent:0;border-top:1px dashed #c8b06a;border-bottom:1px dashed #c8b06a;padding:14px 0;margin:12px 0;background:transparent}
+
+/* ========== 线索弹窗：统一高度 + 内置滚动条 ========== */
+.clue-modal-inner{
+  position:relative;
+  width:min(420px,90%);
+  max-height:min(82vh,560px);   /* 统一最大高度：不超窗口 82% 或 560px */
+  background:linear-gradient(160deg,#1a2d47,#142236);
+  border:2px solid #4a89dc;border-radius:14px;overflow:hidden;
+  box-shadow:0 14px 40px rgba(74,137,220,.35);
+  display:flex;flex-direction:column;
+}
+/* 图片线索区域：超图不超 58%，小图完整显示 */
+.clue-modal-img{
+  max-height:58%;width:100%;object-fit:contain;background:#0d1a2a;
+  flex-shrink:0;border-bottom:1px solid #2a4a7a;
+}
+/* 文档线索区域：固定占 60%，超出则滚 */
+.clue-modal-doc{
+  flex:1 1 60%;
+  max-height:60%;overflow-y:auto;
+  padding:28px 32px 24px;
+  font-family:"KaiTi","STKaiti","楷体",serif;color:#2a2418;
+  text-align:center;line-height:1.9;
+}
+/* 底部固定按钮区域 */
+.clue-modal-body{
+  flex:0 0 auto;padding:14px 24px 18px;
+  border-top:1px solid #2a4a7a;
+  text-align:center;
+}
+.clue-modal-body h3{color:#ffd36e;font-size:17px;margin:4px 0 2px}
+.clue-modal-body p{color:#c8bde8;font-size:13px;line-height:1.7;margin:0 0 12px}
+.clue-modal-body .pick-tip{color:#7fff7f;font-size:12px;margin-bottom:6px}
+.clue-modal-body .btn{margin-top:4px}
+
+/* 统一滚动条样式 */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.05);border-radius:4px}
+::-webkit-scrollbar-thumb{background:rgba(100,130,200,.35);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(100,130,200,.55)}
+.clue-modal-doc ::-webkit-scrollbar-track{background:rgba(0,0,0,.06)}
+.clue-modal-doc ::-webkit-scrollbar-thumb{background:rgba(74,137,220,.4);border-radius:4px}
+
+/* 手机端：线索弹窗更紧凑 */
+@media (max-width:860px){
+  .clue-modal-inner{
+    width:min(92vw,460px);
+    max-height:min(88dvh,calc(100dvh - 30px));
+  }
+  .clue-modal-img{max-height:50%}
+  .clue-modal-doc{
+    flex:1 1 auto;max-height:50%;
+    padding:20px 18px 16px;
+    font-size:14px;line-height:1.8;
+  }
+  .clue-modal-doc .doc-header{font-size:18px;letter-spacing:3px;margin-bottom:6px}
+  .clue-modal-doc .doc-meta{font-size:11px;margin-bottom:10px}
+  .clue-modal-doc .doc-body{font-size:13px;text-indent:1em;line-height:1.9;margin-bottom:8px}
+  .clue-modal-body{padding:10px 14px 14px}
+  .clue-modal-body h3{font-size:15px}
+  .clue-modal-body p{font-size:12px;line-height:1.6;margin-bottom:8px}
+}
 
 /* ============ 推论结论展示区 ============ */
 .ded-result{
@@ -1714,8 +1795,9 @@ button{font-family:inherit}
         </div>
 
         <!-- 画布内：推论成功弹窗（16:9画布内居中，相对整页不再溢出） -->
-        <div class="canvas-modal-mask" id="dedResultCanvasModal">
+        <div class="canvas-modal-mask" id="dedResultCanvasModal" onclick="if(event.target.id==='dedResultCanvasModal')closeMask('dedResultCanvasModal')">
           <div class="canvas-modal">
+            <button class="cm-close" onclick="closeMask('dedResultCanvasModal')">✕</button>
             <div style="font-size:38px;margin-bottom:6px">🧠</div>
             <h3 style="color:#ffd36e;font-size:21px;margin-bottom:4px">推论成功</h3>
             <div id="dedRTitle" style="color:#8ac0ff;font-size:14px;margin-bottom:12px">—</div>
@@ -1726,20 +1808,17 @@ button{font-family:inherit}
             <div id="dedRProgress" style="color:#4a89dc;font-size:12px;margin-bottom:14px">已推论 0 / 0 条</div>
             <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
               <button class="btn primary" onclick="continueAfterDed()">▶ 剧情推进</button>
-              <button class="btn" onclick="closeMask('dedResultCanvasModal')">✕</button>
             </div>
           </div>
         </div>
 
         <!-- 推论失败提示弹窗（失败6次后点击「查看提示」弹出） -->
-        <div class="canvas-modal-mask" id="dedHintModal">
+        <div class="canvas-modal-mask" id="dedHintModal" onclick="if(event.target.id==='dedHintModal')closeMask('dedHintModal')">
           <div class="canvas-modal" style="max-width:520px">
+            <button class="cm-close" onclick="closeMask('dedHintModal')">✕</button>
             <div style="font-size:34px;margin-bottom:6px">💡</div>
             <h3 style="color:#ffd36e;font-size:20px;margin-bottom:10px">推论提示</h3>
-            <div id="dedHintBody" style="padding:12px 14px;background:rgba(74,137,220,.1);border-radius:10px;border:1px solid #2a4a7a;margin-bottom:12px;text-align:left;max-height:300px;overflow:auto"></div>
-            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-              <button class="btn" onclick="closeMask('dedHintModal')">✕</button>
-            </div>
+            <div id="dedHintBody" style="padding:12px 14px;background:rgba(74,137,220,.1);border-radius:10px;border:1px solid #2a4a7a;margin-bottom:12px;text-align:left;max-height:280px;overflow:auto"></div>
           </div>
         </div>
 
