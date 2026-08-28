@@ -1125,6 +1125,15 @@ button{font-family:inherit}
   .stats-bar{font-size:11px;gap:2px}
   .stats-bar .stat-item{padding:2px 4px}
 
+  /* 角色大图弹窗：手机端适配 */
+  .ci-char-modal{padding:12px;z-index:9998}
+  .ci-char-modal-card{width:100%;max-width:none;max-height:94vh;border-radius:12px}
+  .ci-char-modal-imgbox{max-height:45vh}
+  .ci-char-modal-imgbox img{max-height:45vh}
+  .ci-char-modal-body{padding:14px 16px}
+  .ci-char-modal-body h3{font-size:16px}
+  .ci-char-modal-bio{font-size:13px;line-height:1.7}
+
   /* 作品介绍模块：隐藏，改为浮动按钮触发 */
   .cover-info{display:none}
   .ci-fab{
@@ -4452,6 +4461,17 @@ document.addEventListener('DOMContentLoaded', ()=>{
               if(pane) pane.classList.add('active');
             });
           });
+          // 角色卡片点击 → 打开大图弹窗（事件委托，克隆的 DOM 也能用）
+          const charList = body.querySelector('.ci-chars-list') || body;
+          if(charList){
+            charList.addEventListener('click', (e) => {
+              const card = e.target.closest('.ci-char-detailed');
+              if(!card) return;
+              if(window.openCharModal){
+                window.openCharModal(card.dataset.img, card.dataset.name, card.dataset.role, card.dataset.bio);
+              }
+            });
+          }
         }
         _ciModalInited = true;
       }
@@ -4566,6 +4586,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
       charModal.setAttribute('aria-hidden','true');
       document.body.style.overflow = '';
     }
+    // 挂到 window，移动端克隆 DOM 也能调到
+    window.openCharModal  = openCharModal;
+    window.closeCharModal = closeCharModal;
+    // 事件委托：原始列表
     list.addEventListener('click', (e) => {
       const card = e.target.closest('.ci-char-detailed');
       if(!card) return;
