@@ -25,7 +25,7 @@ button{font-family:inherit}
 /* Firefox */
 *{scrollbar-width:thin;scrollbar-color:#3d6ba0 rgba(255,255,255,.04)}
 
-/* ============ 启动 Loading 屏（钥匙主题） ============ */
+/* ============ 启动 Loading 屏（钥匙主题 + 互动感 + 漂浮线索卡片） ============ */
 .loader-screen{
   position:fixed;inset:0;z-index:9999;
   background:
@@ -38,21 +38,38 @@ button{font-family:inherit}
 }
 .loader-screen.hide{opacity:0;visibility:hidden;pointer-events:none;}
 .loader-inner{
-  position:relative;z-index:2;
+  position:relative;z-index:3;
   width:min(86vw,360px);
   display:flex;flex-direction:column;align-items:center;gap:18px;
 }
-.loader-key-wrap{position:relative;width:180px;height:180px;}
+.loader-key-wrap{
+  position:relative;width:180px;height:180px;cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color: transparent;
+}
+.loader-key-wrap:active .loader-key{ transform: rotate(36deg) translateY(-4px) scale(1.04); }
 .loader-key{
   width:180px;height:180px;
   filter: drop-shadow(0 8px 18px rgba(255,190,92,.35))
           drop-shadow(0 2px 6px rgba(0,0,0,.4));
   transform-origin: 40% 50%;
   animation: loaderKeyTurn 1.8s cubic-bezier(.6,.1,.3,1) infinite;
+  transition: transform .15s ease;
 }
 .loader-glow{
   transform-origin:center;
   animation: loaderGlow 1.8s ease-in-out infinite;
+}
+/* 🔑 点击钥匙 → 喷射的金色小粒子 */
+.loader-burst{
+  position:absolute;pointer-events:none;
+  width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle,#fff4c8 0%, #ffbe5c 60%, transparent 100%);
+  animation: loaderBurstFly 900ms cubic-bezier(.12,.7,.3,1) forwards;
+}
+@keyframes loaderBurstFly{
+  0%  { transform: translate(0,0) scale(1);   opacity:1; }
+  100%{ transform: translate(var(--dx),var(--dy)) scale(.1); opacity:0; }
 }
 @keyframes loaderKeyTurn{
   0%   { transform: rotate(-14deg) translateY(0); }
@@ -92,8 +109,17 @@ button{font-family:inherit}
   100%{ background-position: -200% 0; }
 }
 .loader-sub{
-  font-size:12.5px;color:rgba(230,230,255,.6);
+  font-size:12.5px;color:rgba(230,230,255,.65);
   letter-spacing:1px;margin-top:-8px;
+}
+.loader-tip{
+  margin-top:-14px;
+  font-size:11px;color:rgba(255,190,92,.55);
+  letter-spacing:1px;
+  animation: loaderTipFlash 1.6s ease-in-out infinite;
+}
+@keyframes loaderTipFlash{
+  0%,100%{opacity:.45;} 50%{opacity:1;}
 }
 /* 进度条 */
 .loader-bar{
@@ -116,7 +142,6 @@ button{font-family:inherit}
   animation: loaderBarShine 1.4s linear infinite;
   border-radius:999px;
   box-shadow: 0 0 12px rgba(255,190,92,.7);
-  transition: width .25s ease;
 }
 @keyframes loaderBarShine{
   0%  { background-position: 0% 0; }
@@ -146,6 +171,27 @@ button{font-family:inherit}
 @keyframes loaderFloat{
   0%,100%{ transform: translateY(0) translateX(0) scale(1);   opacity:.6;}
   50%    { transform: translateY(-24px) translateX(14px) scale(1.08); opacity:.95;}
+}
+/* 漂浮线索卡片/emoji（制造互动感，不阻塞加载） */
+.loader-clues{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;}
+.loader-clue{
+  position:absolute;font-size:28px;opacity:.75;filter: drop-shadow(0 4px 8px rgba(0,0,0,.35));
+  will-change: transform;
+  animation: loaderClueFloat 11s linear infinite;
+}
+.loader-clue.c1{ left:4%;  top:22%; animation-delay:0s;   font-size:26px;}
+.loader-clue.c2{ left:88%; top:14%; animation-delay:-2s; font-size:30px;}
+.loader-clue.c3{ left:10%; top:80%; animation-delay:-4s; font-size:24px;}
+.loader-clue.c4{ left:82%; top:78%; animation-delay:-6s; font-size:32px;}
+.loader-clue.c5{ left:48%; top:8%;  animation-delay:-8s; font-size:22px;}
+.loader-clue.c6{ left:30%; top:90%; animation-delay:-5s; font-size:26px;}
+.loader-clue.c7{ left:70%; top:45%; animation-delay:-3s; font-size:28px;}
+@keyframes loaderClueFloat{
+  0%   { transform: translate(0, 0) rotate(-6deg); }
+  25%  { transform: translate(18px, -24px) rotate(5deg); }
+  50%  { transform: translate(-8px, -44px) rotate(-3deg); }
+  75%  { transform: translate(-20px, -22px) rotate(7deg); }
+  100% { transform: translate(0, 0) rotate(-6deg); }
 }
 
 /* ============ 屏幕系统 ============ */
@@ -429,11 +475,11 @@ button{font-family:inherit}
   position:absolute;inset:0;width:100%;height:100%;
   object-fit:cover;
 }
-/* 双缓冲：前台不透明（正在显示），后台透明（解码中/过渡用） */
-.bg-front{opacity:1;z-index:1;}
-.bg-back {opacity:0;z-index:0;}
-/* 淡入动画：给即将显示的层加这个类，解码好了再上 */
-.bg-fade{transition: opacity .42s ease;}
+/* 双缓冲：前台/后台初始类仅作初始样式标记，实际透明度 & z-index 由 JS setBg 直接用 style.* 控制
+   （避免 CSS 类 transition + JS style.opacity 冲突叠加不生效导致"背景切不过来"）*/
+.bg-front{opacity:1;z-index:2;}
+.bg-back {opacity:0;z-index:1;}
+/* 注：原 .bg-fade 类已移除，过渡统一由 setBg 里 style.transition 控制 */
 .bg-overlay{
   position:absolute;inset:0;z-index:2;pointer-events:none;
   background:rgba(0,0,0,.5);opacity:0;transition:opacity .4s ease;
@@ -1239,26 +1285,39 @@ button{font-family:inherit}
         <rect x="160" y="109" width="10" height="14" rx="3" fill="url(#keyGrad)"/>
         
       </svg>
-      <!-- 装饰小星星 -->
       <span class="loader-spark s1">✦</span>
       <span class="loader-spark s2">✦</span>
       <span class="loader-spark s3">✧</span>
     </div>
 
     <!-- 标题文案 -->
-    <div class="loader-title">loading…</div>
+    <div class="loader-title">正在打开命运之门…</div>
 
     <!-- 进度条 -->
     <div class="loader-bar">
       <div class="loader-bar-fill" id="loaderBarFill"></div>
       <span class="loader-bar-pct" id="loaderPct">0%</span>
     </div>
+
+    <!-- 副标题 + 提示 -->
+    <div class="loader-sub" id="loaderSub">整理线索 &nbsp;0 / 0</div>
+    <div class="loader-tip">✨ 点一下金钥匙，帮她加速开锁 ✨</div>
   </div>
   <!-- 背景装饰泡泡 -->
   <span class="loader-bubble b1"></span>
   <span class="loader-bubble b2"></span>
   <span class="loader-bubble b3"></span>
   <span class="loader-bubble b4"></span>
+  <!-- 漂浮线索卡片/emoji（氛围用） -->
+  <div class="loader-clues" id="loaderClues">
+    <span class="loader-clue c1" aria-hidden="true">🔍</span>
+    <span class="loader-clue c2" aria-hidden="true">💡</span>
+    <span class="loader-clue c3" aria-hidden="true">📋</span>
+    <span class="loader-clue c4" aria-hidden="true">🧩</span>
+    <span class="loader-clue c5" aria-hidden="true">🗝️</span>
+    <span class="loader-clue c6" aria-hidden="true">📝</span>
+    <span class="loader-clue c7" aria-hidden="true">🌂</span>
+  </div>
 </div>
 
 <!-- ============ 角色详情弹窗（点击角色Tab卡片时打开：大图 + 名字 + 梗概） ============ -->
@@ -2205,6 +2264,13 @@ async function playNode(nodeId){
   if(node.bgm) playBgm(node.bgm);
   if(node.end){ showEnding(node.end); return; }
 
+  // 🔒 保险：进入游戏节点前，强制隐藏画布内的封面/菜单遮罩（canvasCover z-index:50 会挡住所有背景，
+  // 导致玩家看到的是暗色菜单底纹，误以为背景"完全没切换"）
+  try {
+    const cc = $('canvasCover');
+    if(cc) cc.classList.remove('show');
+  } catch(e){}
+
   // ====== 双缓冲背景：必须等新背景解码+淡入完才推剧情，避免背景"慢半拍"
   if(node.bg) await setBg(node.bg);
   else await Promise.resolve();
@@ -2291,54 +2357,74 @@ function typeWriter(el, txt){
   }, 28);
 }
 
-/* ===== 双缓冲背景切换：
-   1) 把新图片塞到"后台"层（不显示）→ 触发 onload=解码完成
-   2) 把后台层 swap 到"前台"淡入，原前台退到后台并清空
-   3) 返回 Promise，playNode 才知道"已经好了"可以推剧情
+/* ===== 双缓冲背景切换（v2：显式追踪前后台，不用类名判别，避免 swap 错乱导致“背景完全没变”）
+   - _bgA / _bgB：两个 img 元素的固定引用
+   - _bgFront：当前前台元素（不透明显示中）
+   - 每次 setBg：把新图塞进「当前后台元素」 → 等 onload / 700ms 兜底 → 直接改 style.opacity 交换层级
 */
 let _bgLastFile = null;
+let _bgFront = null;   // 当前“前台”img 元素（引用，不是 id）
+let _bgBack  = null;   // 当前“后台”img 元素
+let _bgA = null, _bgB = null;
+function _bgInit(){
+  if(_bgA && _bgB) return;
+  _bgA = document.getElementById('bgImgFront');
+  _bgB = document.getElementById('bgImgBack');
+  // 初始：A 在前（有 src），B 在后（空）
+  _bgFront = _bgA;
+  _bgBack  = _bgB;
+}
 function setBg(file){
+  _bgInit();
+  if(!_bgA || !_bgB){ return Promise.resolve(); }
   const src = 'assets/backgrounds/' + file;
-  // 完全相同的背景：直接 resolve
-  if(_bgLastFile === file) return Promise.resolve();
+  if(_bgLastFile === file && _bgFront.getAttribute('src') === src){
+    return Promise.resolve();
+  }
   _bgLastFile = file;
 
-  const front = document.getElementById('bgImgFront');
-  const back  = document.getElementById('bgImgBack');
-  if(!front || !back){ return Promise.resolve(); }
+  // 1) 把后台元素样式重置为"接收新图的透明层"，保证 100% 不可见时偷偷解码
+  const back = _bgBack;
+  const front = _bgFront;
+  back.style.transition = 'none';
+  back.style.opacity    = '0';
+  back.style.zIndex     = '1';
+  front.style.transition = 'none';
+  front.style.opacity    = '1';
+  front.style.zIndex     = '2';   // 前台永远在更上面，避免被后台同层遮挡闪
 
-  // 后台层现在是空的，放新图进去
-  const backFirst = (front.classList.contains('bg-front'));
-  const hiddenLayer = backFirst ? back : front;    // 当前 z-index 低、opacity=0 的那张
-  const shownLayer  = backFirst ? front : back;    // 当前显示的那张
-
+  // 2) 塞新图，等解码 or 超时
   return new Promise((resolve) => {
     let resolved = false;
     const done = () => {
       if(resolved) return;
       resolved = true;
-      // swap 前后台类名，并做淡入过渡
-      hiddenLayer.classList.add('bg-fade');
-      shownLayer.classList.add('bg-fade');
-      // 强制回流再改透明度，保证 transition 生效
+      // 前台 → 后台：淡出（过渡 420ms）
+      // 后台 → 前台：淡入（过渡 420ms）
+      front.style.transition = 'opacity .42s ease, z-index 0s step-start .42s';
+      back.style.transition  = 'opacity .42s ease, z-index 0s step-end';
+      // 强制回流，让 transition 生效
       // eslint-disable-next-line no-unused-expressions
-      hiddenLayer.offsetWidth;
-      hiddenLayer.classList.remove('bg-back');  hiddenLayer.classList.add('bg-front');
-      shownLayer.classList.remove('bg-front'); shownLayer.classList.add('bg-back');
-      // 420ms 动画结束后清空"新后台"的 src，避免两张大图同时占内存
-      setTimeout(()=>{
-        shownLayer.classList.remove('bg-fade');
-        hiddenLayer.classList.remove('bg-fade');
-        shownLayer.removeAttribute('src');
-      }, 460);
-      resolve();
+      back.offsetWidth;
+      back.style.opacity = '1';
+      front.style.opacity = '0';
+      // 480ms 后交换"前台/后台引用" + 清空旧前台 src 释放内存
+      setTimeout(() => {
+        try {
+          // 引用交换
+          _bgFront = back;
+          _bgBack  = front;
+          // 新的后台（= 旧 front）src 卸掉（已经透明=0看不到了，安全）
+          if(_bgBack !== _bgA && _bgBack !== _bgB){ /* 安全检查 */ }
+          _bgBack.removeAttribute('src');
+        } catch(e){}
+        resolve();
+      }, 500);
     };
-
-    hiddenLayer.onload  = done;
-    hiddenLayer.onerror = done;   // 就算加载失败也放行，别卡死剧情
-    hiddenLayer.src = src;
-
-    // 兜底（图片从缓存命中时，有些浏览器可能不触发 onload）——最多 700ms 强制推进
+    back.onload  = done;
+    back.onerror = done;
+    back.src = src;
+    // 兜底：最多 700ms（缓存命中有时 onload 不触发，或 decode 慢）
     setTimeout(done, 700);
   });
 }
@@ -4143,7 +4229,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
           });
           if(!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
           let data; try { data = await resp.json(); } catch(e){ throw new Error('JSON parse fail'); }
-          const r = (data && data.record) ? data.record : null;
+          // jsonbin 返回两种格式（兼容 X-Bin-Meta true/false）：
+          //   X-Bin-Meta: true  → {"record":{sum,count}, "metadata":{...}}
+          //   X-Bin-Meta: false → {sum, count}（裸对象，无外层）
+          const r = (data && data.record && typeof data.record === 'object')
+                      ? data.record
+                      : data;
           if(r && typeof r.sum === 'number' && typeof r.count === 'number' && r.count > 0){
             const avg = (r.sum / r.count).toFixed(1);
             ratingNumEl.textContent = avg;
@@ -4415,90 +4506,182 @@ window.checkTimeline = checkTimeline;
 window.toggleStatDetail = toggleStats;
 
 /* =========================================================
-   🔑 启动预加载 + Loading 动画
-   等所有图片资源加载完成才会显示封面首页
+   🔑 启动预加载 + Loading 动画（v2）
+   - 分阶段：关键图（秒进首页，不阻塞玩家）+ 剩余图后台异步加载
+   - 互动感动效：点钥匙 → 粒子喷射 + 进度最多 +10% 赠送
+   - 平滑进度条：requestAnimationFrame 动画追赶"目标百分比"
    ========================================================= */
 (function startGamePreload(){
   const loaderEl  = document.getElementById('gameLoader');
   const barEl     = document.getElementById('loaderBarFill');
   const pctEl     = document.getElementById('loaderPct');
   const subEl     = document.getElementById('loaderSub');
+  const keyWrap   = document.querySelector('.loader-key-wrap');
 
   // ---------- 组装预加载清单 ----------
-  const list = new Set();
-  // 1) 场景背景（从 NODES 里去重）
+  const allList = new Set();
   const bgUsed = new Set();
   if(typeof NODES !== 'undefined'){
     Object.values(NODES).forEach(n => { if(n && n.bg) bgUsed.add(n.bg); });
   }
-  // 封面 CSS background-image 用到的 2 张也加上
   bgUsed.add('bg01_mansion_outside.jpg');
-  bgUsed.forEach(f => list.add('assets/backgrounds/' + f));
+  bgUsed.forEach(f => allList.add('assets/backgrounds/' + f));
 
-  // 2) 角色立绘 (CHARACTERS.img 里带的 PNG)
   if(typeof CHARACTERS !== 'undefined'){
-    Object.values(CHARACTERS).forEach(c => { if(c && c.img) list.add(c.img); });
+    Object.values(CHARACTERS).forEach(c => { if(c && c.img) allList.add(c.img); });
   }
-  // 角色 JPG 大头像（作品介绍模块/搜证界面引用）
   ['heroine_main.jpg','lu_president_final.jpg','shen_classmate_main.jpg',
    'npc_chen_boss.jpg','npc_lin_author.jpg','npc_zhou_editor.jpg',
-   'chen_molly_deceased.jpg'].forEach(f => list.add('assets/characters/' + f));
+   'chen_molly_deceased.jpg'].forEach(f => allList.add('assets/characters/' + f));
 
-  // 3) 线索卡
   if(typeof CLUES !== 'undefined'){
-    Object.values(CLUES).forEach(c => { if(c && c.img) list.add(c.img); });
+    Object.values(CLUES).forEach(c => { if(c && c.img) allList.add(c.img); });
   }
+  allList.add('assets/logo/game_logo.jpg');
 
-  // 4) logo（favicon & 封面）
-  list.add('assets/logo/game_logo.jpg');
+  // ---- 拆成 2 阶段：critical 是"进首页之前必须好的"（封面/角色Tab的JPG），其余后台懒加载 ----
+  const critical = new Set([
+    // 封面背景 & logo（首页立刻就要看到的）
+    'assets/backgrounds/bg01_mansion_outside.jpg',
+    'assets/logo/game_logo.jpg',
+    // 作品介绍 → 角色 Tab 那 8 个 JPG 大头像（首页切角色Tab会看）
+    'assets/characters/heroine_main.jpg',
+    'assets/characters/lu_president_final.jpg',
+    'assets/characters/shen_classmate_main.jpg',
+    'assets/characters/npc_chen_boss.jpg',
+    'assets/characters/npc_lin_author.jpg',
+    'assets/characters/npc_zhou_editor.jpg',
+    'assets/characters/chen_molly_deceased.jpg',
+    // 开局前 3 个节点的背景（新游戏点进去立刻能看到的）
+    ...Array.from(allList).filter(u =>
+      /bg01_mansion_outside|bg02_hall|bg15_cover/.test(u)),
+  ]);
+  const urlsCritical = Array.from(allList).filter(u => critical.has(u));
+  const urlsLazy     = Array.from(allList).filter(u => !critical.has(u));
 
-  const urls = Array.from(list);
-  const total = urls.length;
-  // 更新 DOM 里的总数（如果实际数 != 42）
-  if(subEl){ const t = subEl.textContent.replace(/\d+\s*$/, String(total)); subEl.textContent = t; }
+  // 给 subEl 初始化文案（用 critical 当总数告诉玩家现在在加速啥）
+  if(subEl) subEl.textContent = `整理线索 &nbsp;0 / ${urlsCritical.length + urlsLazy.length}`;
 
-  let done = 0, failed = 0;
-  const MIN_MS = 900;   // Loading 至少展示 0.9s，避免秒闪
-  const START  = Date.now();
+  // ---------- 进度条：目标% & 当前%，用 rAF 平滑追赶 ----------
+  const TOTAL_VIRTUAL = urlsCritical.length + urlsLazy.length; // 视觉上总数=全部
+  let targetPct = 0;   // 真实目标百分比（点击赠分会推高 target，但最多不超过实际done的上限）
+  let currentPct = 0;  // 当前显示百分比（平滑追上 targetPct）
+  let doneReal = 0;    // 真实 onload 数量（critical+lazy）
+  let failed = 0;
+  let bonusPct = 0;    // 点击钥匙赠送的"假进度%"，上限 10% 只是视觉安抚，不会让 critical 提前解锁
 
-  function update(extraText){
-    const pct = total ? Math.round(100 * done / total) : 100;
-    if(barEl) barEl.style.width = pct + '%';
-    if(pctEl) pctEl.textContent = pct + '%';
-    if(subEl){
-      subEl.textContent = (failed
-        ? `整理线索 &nbsp;${done} / ${total}（${failed}张加载失败）`
-        : `整理线索 &nbsp;${done} / ${total}`);
+  function updateText(){
+    if(!subEl) return;
+    const virtual = Math.min(TOTAL_VIRTUAL, Math.round(TOTAL_VIRTUAL * (targetPct / 100)));
+    subEl.textContent = failed
+      ? `整理线索 &nbsp;${virtual} / ${TOTAL_VIRTUAL}（${failed}张加载失败）`
+      : `整理线索 &nbsp;${virtual} / ${TOTAL_VIRTUAL}`;
+  }
+  function renderTick(){
+    if(!barEl || !pctEl) return;
+    const diff = targetPct - currentPct;
+    if(Math.abs(diff) > .15){
+      currentPct += diff * .14;   // 指数平滑逼近，视觉不跳变
+    } else {
+      currentPct = targetPct;
     }
+    const p = Math.max(0, Math.min(100, currentPct));
+    barEl.style.width = p.toFixed(1) + '%';
+    pctEl.textContent = Math.round(p) + '%';
+  }
+  (function rAF(){
+    renderTick();
+    requestAnimationFrame(rAF);
+  })();
+
+  function bumpTargetFromReal(){
+    // 基于真实 onload 的进度（critical 占比 ~25%，lazy 占 75%）
+    const pct = TOTAL_VIRTUAL ? (100 * doneReal / TOTAL_VIRTUAL) : 100;
+    // targetPct = 真实进度 + 最多 10% 的点击"赠分"（但不得超过真进度+10%，也不得超过95%直到真完成）
+    const maxTarget = Math.max(pct, pct + bonusPct);
+    targetPct = Math.min(maxTarget, doneReal >= TOTAL_VIRTUAL ? 100 : 95);
+    updateText();
   }
 
-  function finish(){
+  // ---------- 🔑 钥匙点击互动：粒子喷射 + 赠进度 ----------
+  let clickGiftBudget = 10;  // 最多送 10%（避免真加载10秒时还被点到100%骗人进首页）
+  if(keyWrap){
+    keyWrap.addEventListener('click', (e) => {
+      // 1) 喷粒子
+      const rect = keyWrap.getBoundingClientRect();
+      const cx = (e.clientX ? e.clientX - rect.left : rect.width/2);
+      const cy = (e.clientY ? e.clientY - rect.top  : rect.height/2);
+      for(let i = 0; i < 9; i++){
+        const d = document.createElement('span');
+        d.className = 'loader-burst';
+        const ang = (Math.PI * 2 * i) / 9 + Math.random() * .5;
+        const r   = 56 + Math.random() * 56;
+        d.style.setProperty('--dx', Math.cos(ang) * r + 'px');
+        d.style.setProperty('--dy', Math.sin(ang) * r + 'px');
+        d.style.left = (cx - 5) + 'px';
+        d.style.top  = (cy - 5) + 'px';
+        keyWrap.appendChild(d);
+        setTimeout(() => { try { keyWrap.removeChild(d); } catch(err){} }, 950);
+      }
+      // 2) 钥匙"咔哒"快速抖一下
+      const svg = keyWrap.querySelector('.loader-key');
+      if(svg){
+        svg.style.animation = 'none';
+        // 强制回流
+        // eslint-disable-next-line no-unused-expressions
+        svg.offsetWidth;
+        svg.style.transform = 'rotate(42deg) translateY(-6px) scale(1.06)';
+        setTimeout(()=>{
+          svg.style.transform = '';
+          svg.style.animation = '';
+        }, 180);
+      }
+      // 3) 赠 1% 进度（最多 10% 封顶，纯视觉安慰剂，不让 critical 真提前解锁）
+      if(clickGiftBudget > 0 && bonusPct < 10){
+        bonusPct += 1;
+        clickGiftBudget -= 1;
+        bumpTargetFromReal();
+      }
+    });
+  }
+
+  // ---------- 真正的加载器 ----------
+  const MIN_MS = 300;   // Loading 至少展示 0.3s，避免秒闪
+  const START  = Date.now();
+  let criticalDone = false;
+  let unlockCalled = false;
+
+  function loadImage(src, onOkOrFail){
+    const img = new Image();
+    img.onload  = () => onOkOrFail(true);
+    img.onerror = () => onOkOrFail(false);
+    img.src = src;
+  }
+
+  function finishCritical(){
+    if(unlockCalled) return;
+    unlockCalled = true;
     const remain = Math.max(0, MIN_MS - (Date.now() - START));
     setTimeout(() => {
-      // 🔓 开锁完成，淡出 Loading
+      // 🔓 开锁完成，淡出 Loading（允许后台继续懒加载 lazy，不阻塞首页）
       if(loaderEl){
         loaderEl.classList.add('hide');
         setTimeout(()=>{ loaderEl.style.display = 'none'; }, 700);
       }
-      // 执行原 window.load 的初始化（渲染画廊 / 下雨 / BGM / 状态栏 / 封面）
       try {
         renderCharGallery && renderCharGallery();
         startRain && startRain(document.getElementById('coverRain'));
         playBgm && playBgm('cover');
         setStatsUI && setStatsUI();
-        // 如果之前封面是 hidden，现在打开首页 cover screen
         const cover = document.getElementById('coverScreen');
         if(cover){
           cover.classList.remove('hidden');
-          // 触发首页 tab 初始化（作品介绍模块渲染）
           if(typeof initCoverIntroTabs === 'function') initCoverIntroTabs();
           else if(typeof __initIntroRating === 'undefined'){
-            // 兜底：兼容旧版——直接触发作品介绍模块的 refreshRating
             if(typeof refreshRating === 'function') refreshRating();
           }
         }
       }catch(e){ console.warn('[preload] init error:', e); }
-      // 兜底：首次点击时尝试启动 BGM（绕过自动播放限制）
       document.addEventListener('click', ()=>{
         if(typeof bgmAudio !== 'undefined' && bgmAudio.paused && currentBgm && !bgmMuted){
           bgmAudio.play().catch(()=>{});
@@ -4507,21 +4690,41 @@ window.toggleStatDetail = toggleStats;
     }, remain);
   }
 
-  if(total === 0){ update(); finish(); return; }
+  // ---- 阶段 1：关键图 critical ----
+  if(urlsCritical.length === 0){
+    doneReal = 0; criticalDone = true; bumpTargetFromReal(); finishCritical();
+  } else {
+    let critOk = 0, critFail = 0;
+    urlsCritical.forEach(src => loadImage(src, (ok) => {
+      if(!ok) critFail++, failed++;
+      else critOk++;
+      doneReal++;
+      bumpTargetFromReal();
+      if(critOk + critFail >= urlsCritical.length){
+        criticalDone = true;
+        // 关键图全部 onload 了 → 立刻解锁进首页（不等后台）
+        finishCritical();
+      }
+    }));
+  }
 
-  update();
-  urls.forEach(src => {
-    const img = new Image();
-    const cb = (ok) => {
+  // ---- 阶段 2：剩余图后台懒加载（只推进度、不阻塞任何人）----
+  if(urlsLazy.length > 0){
+    urlsLazy.forEach(src => loadImage(src, (ok) => {
       if(!ok) failed++;
-      done++;
-      update();
-      if(done >= total) finish();
-    };
-    img.onload  = () => cb(true);
-    img.onerror = () => cb(false);
-    img.src = src;
-  });
+      doneReal++;
+      // 所有图真的都完成了 → targetPct 强制到 100（虽然 loader 很可能已经淡出了，给控制台好看）
+      bumpTargetFromReal();
+      if(doneReal + failed >= TOTAL_VIRTUAL){
+        targetPct = 100;
+        console.log('[preload] all images ready:', TOTAL_VIRTUAL, 'failed=', failed);
+      }
+    }));
+  } else if(urlsCritical.length > 0) {
+    // 没有 lazy，但 critical 有做完 → 设 100
+    bumpTargetFromReal();
+    targetPct = 100;
+  }
 })();
 
 /* =========================================================
