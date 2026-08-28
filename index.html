@@ -1535,7 +1535,7 @@ button{font-family:inherit}
             <span class="ci-tag ci-tag-main">推理悬疑</span>
             <span class="ci-tag">多结局</span>
             <span class="ci-tag">互动搜证</span>
-            <span class="ci-tag">法庭辩论</span>
+            <span class="ci-tag">推论合成</span>
             <span class="ci-tag">约 15 分钟</span>
           </div>
         </div>
@@ -4277,11 +4277,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
               headers: { 'X-Bin-Meta': 'false' }
             });
             if(!getResp.ok) throw new Error('GET HTTP ' + getResp.status);
-            const rec = (await getResp.json()).record;
+            const rawData = await getResp.json();
+            // 兼容两种格式：X-Bin-Meta:false → 裸{sum,count}；true → {record:{sum,count}}
+            const rec = (rawData && rawData.record) ? rawData.record : rawData;
             if(typeof rec.sum !== 'number') rec.sum = 10;
             if(typeof rec.count !== 'number') rec.count = 1;
             rec.sum += v; rec.count += 1;
-            // 2) 写回
+            // 2) 写回（jsonbin 支持 CORS，X-Master-Key 是写入必需的）
             const putResp = await fetch('https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID, {
               method: 'PUT',
               headers: {
@@ -4296,7 +4298,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
             if(label) label.textContent = `基于 ${rec.count} 人评价`;
             toast('评分成功，感谢支持 💯', 1800);
           }catch(e){
-            toast('评分已记录 💯', 1800);
+            console.warn('[rating] submit failed:', e && e.message ? e.message : e);
+            toast('评分已记录（服务器同步可能延迟）💯', 1800);
           }
         } else {
           toast('评分已记录 💯', 1800);
