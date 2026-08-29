@@ -213,7 +213,6 @@ const SCRIPT = {
     bg:'bg02_living_room.jpg', bgm:'search',
     lines:[
       { s:'陆社长', type:'lu', c:'先搜客厅+阁楼入口。检测试剂卡给你——安眠药/砒霜/氰化物/降压药这四类能快筛。' },
-      { s:'旁白', c:'【🔎 放大镜搜证模式开启】找到3条线索后剧情继续。' },
     ],
     search:{ bgKey:'bg02', require:['task_note','register_book','cotton_swab'], msg:'找到邀请信、进出登记簿、检测记录卡（3条）！' },
     next:'Q1'
@@ -237,7 +236,6 @@ const SCRIPT = {
       { s:'女主', type:'hero', c:'你看林作者的状态——从发现尸体到现在，手一直在抖。' },
       { s: '沈同学', type: 'shen', c: '……他手机一直在震，我瞄到是他儿子发的，内容是「爸你别管了，我明天就签」。他好像有心事。' },
       { s:'沈同学', type:'shen', c:'书房……会让我想到，外婆当年就是在这里代笔陈茉莉当年就是在这里写下畅销著作《白茉莉档案》的。' },
-      { s:'旁白', c:'【🔎 放大镜搜证模式开启】找到 3 条线索后继续。' },
     ],
     choices:[
       { t:'拍沈同学肩：「至少今晚，你不是一个人在翻这本旧账。」', eff:{shen:2}, next:'node5' },
@@ -266,7 +264,6 @@ const SCRIPT = {
     bg:'bg05_basement.jpg', bgm:'search',
     lines:[
       { s:'陆社长', type:'lu', c:'地下室铁盒——陈茉莉私人物品封存点。遗嘱应该在这里。' },
-      { s:'旁白', c:'【🔎 放大镜搜证模式开启】找到 3 条线索。' },
     ],
     choices:[
       { t:'同意陆社长：「周编辑脸色最可疑，假账+举报信她跑不掉。」', eff:{ded:2,lu:1}, next:'node8' },
@@ -279,7 +276,6 @@ const SCRIPT = {
     lines:[
       { s:'旁白', c:'重回案发现场。地毯上的人形血迹还在，铜文镇和靠枕都被物证袋封了。' },
       { s:'陆社长', type:'lu', c:'阁楼是案发现场核心——酒架、书桌、沙发茶几都要仔细搜。检测试剂卡给你，现场物证全在这了。' },
-      { s:'旁白', c:'【🔎 放大镜搜证模式开启】找到 5 条关键物证。搜完后可合成「真正死因判断」推论。' },
     ],
     search:{ bgKey:'bg06', require:['tea_cup','congee_bowl','wine_glass','paperweight','velvet_pillow'], msg:'找到天鹅绒靠枕、铜文镇、安眠茶杯、砒霜粥碗、药酒红酒杯（5条）！' },
     next:'Q2'
@@ -302,7 +298,6 @@ const SCRIPT = {
     bg:'bg04_study_room.jpg', bgm:'search',
     lines:[
       { s:'陆社长', type:'lu', c:'第一次搜证漏掉了个人物品和隐蔽物证。现在去翻每个人的口袋/房间，再回阁楼补查第一次漏掉的细节。' },
-      { s:'旁白', c:'【🔎 二次搜证开启】找到 7 条新证据后继续。' },
     ],
     search:{ bgKey:'bg_ext', require:['debt_sms','xu_son','xu_arsenic','lin_key','door_bolt_side','bookend','earring'], msg:'凑齐7条——①阁楼补查：黄铜书挡（底角血迹+半个周编辑指纹）、侧门插销指纹记录、珍珠耳钉（门帘缝）②个人物品：旧备用钥匙（林作者口袋）、催债短信（陈老板手机）、砒霜纸包（许管家厨房）、儿子遗物包（许管家隔间）！' },
     next:'Q3'

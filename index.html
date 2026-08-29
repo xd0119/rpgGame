@@ -2788,69 +2788,46 @@ function nextLine(){
     showLine(line);
     lineIdx++;
 
-    // ⚠️ 如果是最后一行 + 该节点是搜证节点 + 最后一句包含"搜证模式开启"关键字
-    //   （这句就是"找线索的提示"），玩家通常以为点了就直接进搜证。
-    //   之前是必须再点一次 nextLine() 才真正 showHotspots，造成"点一下又回到对话"的误判感
-    //   现在：播完提示+延迟1500ms → 自动 showHotspots，不再等玩家点
-    const node = SCRIPT[state.nodeId];
-    if(isLastLine && node && node.search){
-      const raw = (line.c || '') + (line.t || '');   // 合并 c 与 t
-      // ✅ 方向1：正则增强 —— 新增匹配「二次搜证开启」(ext节点) / 「搜证开启」(通用变体)
-      //   原关键词只覆盖"放大镜搜证/搜证模式"，漏掉了ext的"二次搜证开启"，导致ext不走修复链路
-      if(/搜证模式|放大镜搜证|点击发光的线索|搜集线索|找出.*线索|找到.*物证|开启放大镜|搜证完成|二次搜证开启|搜证开启/g.test(raw)){
-        // ✅ 用户主诉「放大镜搜证提示句总是反复出现」优化方案：
-        //   把「【🔎 放大镜搜证模式开启】找到3条线索后剧情继续。」这句原本在对话框内作为旁白台词显示，
-        //   改为轻量 toast 弹出（hint），同时把对话框内的提示句清空——
-        //   好处1：主观感受"放大镜句反复出"大幅下降（toast 2.2s自动消失，不会和后面的搜证/对白叠在一起）
-        //   好处2：零连锁反应—— 不改 SCRIPT 节点定义、正则仍命中、AutoSearchTimer 照常设置、所有后续分支/兜底逻辑完全不变
-        //   风险评估：无风险—— 相当于把提示句从"对话框文本"移到"toast提示"，只是视觉位置变化，不影响状态机
-        toast('🔎 ' + String(raw).replace(/^【?🔎】?/g, '').replace(/^[【\s]+|[】\s]+$/g, ''), 2600);  // 去掉重复的🔎和括号，toast自带前缀
-        // 立即清掉对话框里刚写进去的放大镜提示句文本 + 停止 typeWriter（避免逐字还在"嘀嗒"打提示句的字）
-        clearInterval(window.typingTimer);
-        window.typingDone = true; typingDone = true;
-        const __dTx = $('dialogueText'); if(__dTx){ __dTx.textContent = '・'; __dTx.classList.add('done'); } // 放一个最小占位符，不抢视觉焦点
-        const __dSpk = $('speaker'); if(__dSpk){ __dSpk.textContent = ''; __dSpk.className = 'speaker'; }
-        // 不要在这里 hideDialogueBox！
-        //   之前错误写法：立即 hideDialogueBox() → 打字机还在播放提示句 + 1500ms阅读期
-        //      这段时间"对话框已消失 + 搜证热点还没出现" → 空白卡死感 + 立绘残留
-        //   正确时机：让提示句完整显示给玩家读，只在 setTimeout 触发 showHotspots 的瞬间
-        //      由 showHotspots() 内部统一 hideDialogueBox + hidePortrait + 加 search-mode
-        // 估算 typeWriter 写完时间 + 给玩家阅读 1500ms，然后自动开搜证
-        const estTypeMs = Math.min(1800, (String(raw).length * 30) + 120);
-        // 🔎 自动进搜证的timer用全局变量保存，避免"玩家手动点击进搜证 / 切节点 / 搜完继续"之后 timer 还残留触发
-        clearTimeout(_autoSearchTimer);
-        _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
-          // ✅ 方向3（第1处）：每次递归前，强制清掉上一轮遗留的 timer（避免浏览器队列里同时有20个存活timer → 连续触发showHotspots和toast）
-          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-          // 方向3（第2处）：重试次数从 20×200ms=4s 收敛为 6×200ms=1.2s
-          //   因为 typeWriter 一般最长 1.8s 完成，再给 1.2s 等待足够了；再久就是真卡死，走超时强制分支
-          retryRemain = typeof retryRemain === 'number' ? retryRemain : 6;
-          // ✅ 双条件（lineIdx越过最后一行 + typeWriter写完）才真正进入搜证
-          //   防止"放大镜提示句的逐字还没显示完/玩家还没看完，热点就先弹出来盖住对白和人物立绘"
-          if(lineIdx >= currentLines.length && typingDone === true){
-            clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-            showHotspots(node.search);
-            return;
-          }
-          if(retryRemain <= 0){ // 重试兜底：1.2s超时还没写完 → 强制跳到typeWriter末尾再立即执行
-            clearInterval(typingTimer); typingDone = true;
-            try {
-              const last = currentLines[currentLines.length-1];
-              if(last){ $('dialogueText').textContent = (last.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
-            }catch(e){}
-            clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-            showHotspots(node.search);
-            return;
-          }
-          // ✅ 方向3（第3处）：递归设下一次 200ms timer 前，再次 clearTimeout 旧 timer（保险）
-          clearTimeout(_autoSearchTimer);
-          _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
-        }, estTypeMs + 1500);
-        return; // 不等玩家继续点
+  // ✅ 全新搜证触发机制（用户要求：所有台词里的放大镜/搜证提示句全部删除，只在hint/toast中显示，减少正则匹配的bug源）
+  //   触发条件不再依赖"最后一句台词包含XX关键词"，改为：
+  //     1) 该节点配置了 node.search（是搜证节点，配置级显式标记）
+  //     2) 节点全部 lines 播完了（lineIdx >= currentLines.length）
+  //   —— 不再让 SCRIPT 的台词文本和"何时进搜证"这个核心状态机产生耦合，减少"台词改了/正则漏了/拼写错了 → 搜证不触发"的bug
+  const __curNode = SCRIPT[state.nodeId];
+  if(lineIdx >= currentLines.length && __curNode && __curNode.search){
+    toast(buildSearchHintToast(__curNode), 2600);
+    // 立即停 typeWriter + 清空对话框占位
+    clearInterval(window.typingTimer);
+    window.typingDone = true; typingDone = true;
+    const __dTx = $('dialogueText'); if(__dTx){ __dTx.textContent = '・'; __dTx.classList.add('done'); } // 最小占位符（不抢视觉焦点）
+    const __dSpk = $('speaker'); if(__dSpk){ __dSpk.textContent = ''; __dSpk.className = 'speaker'; }
+    // 固定 1.5s 阅读期（给 toast 读），然后自动进搜证
+    clearTimeout(_autoSearchTimer);
+    _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
+      clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+      retryRemain = typeof retryRemain === 'number' ? retryRemain : 6;
+      if(lineIdx >= currentLines.length && typingDone === true){
+        clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+        showHotspots(__curNode.search);
+        return;
       }
-    }
+      if(retryRemain <= 0){
+        clearInterval(typingTimer); typingDone = true;
+        try {
+          const last = currentLines[currentLines.length-1];
+          if(last){ $('dialogueText').textContent = (last.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
+        }catch(e){}
+        clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+        showHotspots(__curNode.search);
+        return;
+      }
+      clearTimeout(_autoSearchTimer);
+      _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
+    }, 1500);
     return;
   }
+  return;
+}
   // 2. 选项后追加的"嫌疑人回答"（一定要玩家点击后才推进）
   if(pendingAfterLines.length > 0){
     const extra = pendingAfterLines.shift();
@@ -2865,60 +2842,59 @@ function nextLine(){
   }
   const node = SCRIPT[state.nodeId];
   if(node.search){
-    // ✅ node7"对白未播完就进搜证"回归·前置双保险：
-    //   正常流程是分支1播完currentLines所有台词（lineIdx++直到>=len）才会掉到这里。
-    //   但如果出现竞态（分支1的return被某个状态跳过、或其它函数提前nextLine）导致lineIdx还小于currentLines.length
-    //   就直接进入下面的"typingDone===true → showHotspots"判定 → 热点提前出、对白还在显示。
-    //   防御：在这里**再套一层与分支1等价的前置判断**——台词还没播完就强行推进到最后一句（与分支1的推进逻辑完全一致），绝不直接进showHotspots。
-    if(lineIdx < currentLines.length - 1){
-      lineIdx = currentLines.length - 1;
+    // ✅ 分支4手动推进·前置拦截：还没越过所有台词就强行越过，绝不在对白期间进搜证
+    //   （注意：原来的"推到 currentLines.length-1 最后一行 + 正则匹配提示句设AutoSearchTimer"
+    //         已经被设计级重构为"node.search存在就设AutoSearchTimer"，台词里不再有放大镜提示句，正则残留彻底删除）
+    if(lineIdx < currentLines.length){
+      // 强制越过最后一句（lineIdx = currentLines.length）
+      lineIdx = currentLines.length;
       clearInterval(typingTimer); typingDone = true;
-      const last = currentLines[lineIdx];
-      $('dialogueSpeaker').textContent = last.s ? last.s.replace('女主', state.heroine) : '';
-      $('dialogueText').textContent = (last.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n');
-      $('dialogueText').classList.add('done');
-      // 与分支1同口径：最后一句如果是搜证提示句，也顺手设一下自动进搜证timer（防漏）
-      if(last && /搜证模式|放大镜搜证|点击发光的线索|搜集线索|找出.*线索|找到.*物证|开启放大镜|搜证完成|二次搜证开启|搜证开启/g.test(String(last.c||'') + String(last.t||''))){
-        const raw = String(last.c||'') + String(last.t||'');
-        const estTypeMs = Math.min(1800, (raw.length * 30) + 120);
-        clearTimeout(_autoSearchTimer);
-        _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
-          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-          retryRemain = typeof retryRemain === 'number' ? retryRemain : 6;
-          if(lineIdx >= currentLines.length && typingDone === true){
-            clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-            showHotspots(node.search);
-            return;
-          }
-          if(retryRemain <= 0){
-            clearInterval(typingTimer); typingDone = true;
-            try{
-              const l = currentLines[currentLines.length-1];
-              if(l){ $('dialogueText').textContent = (l.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
-            }catch(e){}
-            clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-            showHotspots(node.search);
-            return;
-          }
-          clearTimeout(_autoSearchTimer);
-          _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
-        }, estTypeMs + 1500);
+      // 先把最后一句正常对白显示出来（避免玩家看不到最后一句就跳到空白占位）
+      const last = currentLines[currentLines.length - 1];
+      if(last){
+        $('dialogueSpeaker').textContent = last.s ? last.s.replace('女主', state.heroine) : '';
+        $('dialogueText').textContent = (last.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n');
+        $('dialogueText').classList.add('done');
       }
+      // 与分支1口径完全一致：toast + 清空占位 + 设1.5s自动进搜证timer（复用buildSearchHintToast公共函数，toast文案统一）
+      toast(buildSearchHintToast(node), 2600);
+      clearInterval(window.typingTimer); window.typingDone = true; typingDone = true;
+      const __dTx2 = $('dialogueText'); if(__dTx2){ __dTx2.textContent = '・'; __dTx2.classList.add('done'); }
+      const __dSpk2 = $('speaker'); if(__dSpk2){ __dSpk2.textContent = ''; __dSpk2.className = 'speaker'; }
+      clearTimeout(_autoSearchTimer);
+      _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
+        clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+        retryRemain = typeof retryRemain === 'number' ? retryRemain : 6;
+        if(lineIdx >= currentLines.length && typingDone === true){
+          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+          showHotspots(node.search);
+          return;
+        }
+        if(retryRemain <= 0){
+          clearInterval(typingTimer); typingDone = true;
+          try{
+            const l = currentLines[currentLines.length-1];
+            if(l){ $('dialogueText').textContent = (l.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
+          }catch(e){}
+          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+          showHotspots(node.search);
+          return;
+        }
+        clearTimeout(_autoSearchTimer);
+        _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
+      }, 1500);
       return;
     }
-    // ✅ 问题1修复：手动点空白进搜证，也要求 typeWriter 真正写完（typingDone=true）
-    //   如果玩家加速typeWriter刚点完，立即再点一下空白 → 就会走到这里立即showHotspots
-    //   如果typeWriter还在写（说明玩家还没加速完最后一句）→ 强制跳到最后一字，**return不进搜证**
-    //   让玩家再点一次空白 → 这时typingDone=true，才真正进搜证。
+    // ✅ 手动加速兜底：连点空白时，typeWriter逐字还没写完最后一句对白 → 加速到句末，return不进搜证
     if(typingDone !== true){
       clearInterval(typingTimer); typingDone = true;
       try{
-        const cur = currentLines[Math.max(0,lineIdx-1)];
+        const cur = currentLines[Math.max(0, currentLines.length-1)];
         if(cur){ $('dialogueText').textContent = (cur.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
       }catch(e){}
       return;
     }
-    // 🔎 玩家主动推进进搜证：清掉还没到点的自动进搜证 timer，避免触发两次 showHotspots 造成立绘/台词错乱
+    // 玩家主动进搜证：清未到点自动timer → 进
     clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
     showHotspots(node.search); return;
   }
@@ -3481,6 +3457,24 @@ function advanceAfterSearch(){
   }
   else if(node && node.next) playNode(node.next);
   else toast('提示：未配置下一节点', 2200);
+}
+// ========== 搜证节点公共提示 ==========
+// 把所有搜证节点的"放大镜搜证提示句"统一集中在这里（SCRIPT台词里彻底删除提示句，减少台词文本与状态机耦合导致的bug）
+// 分支1自动触发 / 分支4手动加速兜底 / 设计级短路 alreadyAll 前都调用此函数
+function buildSearchHintToast(node){
+  if(!node || !node.search) return '🔎 放大镜搜证模式开启';
+  const req = node.search.require;
+  const reqCount = Array.isArray(req) ? req.length
+    : (req && typeof req === 'object' ? Object.keys(req).length : 1);
+  const msg = node.search.msg ? ('｜' + node.search.msg) : '';
+  const nodeId = state.nodeId;
+  if(nodeId === 'ext'){
+    return `🔎 二次搜证开启 · 找到 ${reqCount} 条新证据后剧情继续${msg}`;
+  }
+  if(nodeId === 'node8'){
+    return `🔎 放大镜搜证模式开启 · 找到 ${reqCount} 条关键物证后继续（搜完可合成「真正死因判断」推论）${msg}`;
+  }
+  return `🔎 放大镜搜证模式开启 · 找到 ${reqCount} 条线索后剧情继续${msg}`;
 }
 function addClue(id){
   if(state.clues.includes(id)) return;
