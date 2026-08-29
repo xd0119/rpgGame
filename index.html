@@ -496,7 +496,7 @@ button{font-family:inherit}
 /* 立绘（单人居中） */
 .char-center{
   position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-  height:90%;max-width:75%;object-fit:contain;z-index:5;
+  height:90%;max-width:75%;object-fit:contain;z-index:10;
   filter:drop-shadow(0 6px 24px rgba(0,0,0,.65));
   opacity:0;transition:opacity .4s ease,left .35s ease,transform .35s ease,height .35s ease,max-width .35s ease;
   pointer-events:none;
@@ -504,7 +504,7 @@ button{font-family:inherit}
 .char-center.show{opacity:1}
 /* 立绘（群像并排，用于多人同框登场） */
 .char-group{
-  position:absolute;bottom:0;left:0;right:0;z-index:5;
+  position:absolute;bottom:0;left:0;right:0;z-index:10;
   display:flex;justify-content:center;align-items:flex-end;gap:6px;
   height:88%;pointer-events:none;opacity:0;transition:opacity .5s ease,left .35s ease,right .35s ease,height .35s ease;
 }
@@ -581,11 +581,11 @@ button{font-family:inherit}
 }
 
 /* 热点（场景中叠加小线索图，拾取后放大） */
-#hotspots{position:absolute;inset:0;z-index:7}
+#hotspots{position:absolute;inset:0;z-index:5}
 .hotspot{
   position:absolute;width:8%;min-width:48px;min-height:48px;
   aspect-ratio:1/1;
-  cursor:pointer;pointer-events:auto;display:none;border-radius:50%;z-index:7;
+  cursor:pointer;pointer-events:auto;display:none;border-radius:50%;z-index:5;
   overflow:visible;
 }
 .hotspot.show{display:block}
@@ -2739,6 +2739,32 @@ async function playNode(nodeId){
   //      还没到 showHotspots 就 hide 了，会导致"立绘显示+没有聊天框"的bug（截图1正是这个）
   //   正确时机：只在 showHotspots() 真正启动放大镜模式那一瞬间才 hideDialogueBox
   showDialogueBox();
+
+  // ⚡【设计级短路 · 终结14处补丁恶性循环】：搜证节点线索已齐 → 直接走搜证结束流程。
+  //   · 判断时机：进入搜证节点的唯一入口（playNode），统一收口（新游戏/脉络回跳/节点跳转全部经过这里）
+  //   · 触发条件：该节点是搜证节点(node.search) 且 state.clues 已覆盖 require 的全部线索ID
+  //   · 结果：跳过 "播台词→逐句→最后一句放大镜提示→typeWriter打字→setTimeout(_autoSearchTimer)
+  //          →showHotspots→热点渲染→补丁#6立即出continueBar→玩家点继续" 整条冗长链路
+  //          直接调用 advanceAfterSearch() → 进入该搜证节点的后置剧情 / 盘问选项 / 下一节点
+  //   · 为什么不会影响新游戏第一次搜证？→ 第一次进搜证时 clues 里肯定没有 require 的那些 ID → alreadyAll=false → 正常流程照跑不误
+  if(node.search && node.search.require && Array.isArray(node.search.require)){
+    const needIds = node.search.require.filter(x => typeof x === 'string' && x.length > 0);
+    if(needIds.length > 0){
+      const cluesSet = state.clues || [];
+      const alreadyAll = needIds.every(cid => cluesSet.includes(cid));
+      if(alreadyAll){
+        // 背景/特效/音效还是按搜证节点正常切（保证切到正确场景：书房/地下室等）
+        if(node.bg) await setBg(node.bg); else await Promise.resolve();
+        if(node.effect) applyEffect(node.effect); else stopRain();
+        if(node.bgm) playBgm(node.bgm);
+        setStatsUI();
+        try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
+        // ⚡ 直接进入搜证结束逻辑（推triggerLines如沈同学外婆台词 / 开盘问选项 / 跳下节点）
+        advanceAfterSearch();
+        return;  // 🔴 不再执行 currentLines/nextLine/showHotspots → 放大镜提示句永远不会再出现
+      }
+    }
+  }
 
   if(node.bg) await setBg(node.bg);
   else await Promise.resolve();
