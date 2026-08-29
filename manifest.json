@@ -1,0 +1,22 @@
+{
+  "name": "暴雨孤岛",
+  "short_name": "暴雨孤岛",
+  "description": "暴雨孤岛推理RPG",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1a1d2e",
+  "theme_color": "#1a2d47",
+  "icons": [
+    {
+      "src": "assets/logo/game_logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "assets/logo/game_logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
