@@ -3033,6 +3033,17 @@ function showChoices(choices){
   //   ——这是放大镜句 / 知无不言 / 许管家"是我下的" 三类重复的根因。
   //     只要选项面板一出现，对话框里的上一句必然清掉，不会再出现"选项浮在背景台词上面"的错觉。
   clearDialogue();
+  // ✅ 选项≥4条时临时隐藏底部对话框：
+  //   4条及以上的选项按钮会占据屏幕很大面积（尤其是移动端），底部对话框会直接盖在选项下半部分导致"最下面一两条选项看不全"。
+  //   做法：判定原始传入 choices.length >=4 时调用 hideDialogueBox() 临时隐藏。
+  //   恢复时机（统一收口）：hideChoices() 被任何原因触发时——① 玩家点了某个选项 ② doApplyJump 脉络回跳收口 ③ 其他函数关选项面板时——自动 showDialogueBox() 还原。
+  //   标记 _chHideDialogueForManyChoices：即使原本就是搜证隐藏态的对话框也不误恢复（只有"为了多选项临时隐藏"时才恢复）
+  if(Array.isArray(choices) && choices.length >= 4){
+    window._chHideDialogueForManyChoices = true;
+    hideDialogueBox();
+  } else {
+    window._chHideDialogueForManyChoices = false;
+  }
   const c = $('choices');
   c.innerHTML = '';
   // 选项出现时切换左右分栏布局：立绘在左，选项在右，避免遮挡
@@ -3204,6 +3215,12 @@ function showChoices(choices){
 function hideChoices(){
   $('choices').classList.remove('show');
   $('gameInner').classList.remove('choices-open');
+  // ✅ 对应 showChoices 里"选项≥4条临时隐藏对话框"：关闭选项面板时还原对话框显示
+  //   触发时机覆盖所有场景：① 玩家点击某个选项（onclick里 hideChoices()）② 脉络回跳 doApplyJump（4839行 hideChoices()）③ 其他函数关选项面板
+  if(window._chHideDialogueForManyChoices === true){
+    showDialogueBox();
+    window._chHideDialogueForManyChoices = false;
+  }
 }
 // 清除 / 显示 对话框（切换节点 / 搜证模式用）
 function clearDialogue(){
