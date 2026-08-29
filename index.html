@@ -3267,6 +3267,14 @@ function clearHotspots(){
   closeSearchContinueBar();
 }
 function showHotspots(cfg){
+  // ✅ 静态自检补漏：进入搜证模式（无论自动/手动触发）的第一时间，立即清掉 isLastLine 自动进搜证的遗留 timer
+  //   这是"放大镜句频繁弹出比修前还多"的唯一真实漏网根因：
+  //   场景：玩家在"最后一句放大镜提示句typeWriter逐字播放中 + _autoSearchTimer已设（estTypeMs+1500ms后触发）"
+  //         → 玩家手痒反复点空白 → 手动推进 nextLine() 进入分支4（typingDone===true→showHotspots(node.search)）
+  //         → 但 isLastLine 设的 _autoSearchTimer 没被清 → estTypeMs+1500ms 到点后再次执行 tryShowAfterDone → 又一次 showHotspots()
+  //         → 重复弹「放大镜已开启」toast（主观感觉"比修前还频繁"）
+  //   修复：showHotspots 第一行就强制 _autoSearchTimer = null，无论手动/自动进入，都彻底切断"重复触发"源
+  clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
   hidePortrait();      // 🔎 搜证模式：清掉立绘（避免"立绘残留+无对话框"的怪状态，以及遮挡线索）
   hideGroupPortrait(); // 顺便清群像层
   $('gameInner').classList.add('search-mode'); // 鼠标切放大镜
