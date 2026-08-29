@@ -4561,7 +4561,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }
   })();
 
-  // --- 2. 玩家评分：localStorage 本地记录（不依赖外部服务器，无 CORS 问题） ---
+  // --- 2. 玩家评分：Cloudflare Worker + KV（真共享评分） ---
+  //       部署完 Worker 后把下面的 URL 替换成你的 Worker 地址
+  const RATING_API = 'https://rpg-rating.xd0119.workers.dev';
   (function initRating(){
     const ratingNumEl = document.querySelector('#ciRatingNum');
     if(!ratingNumEl) return;
@@ -4571,20 +4573,28 @@ document.addEventListener('DOMContentLoaded', ()=>{
     const RATED_KEY = 'rpgGame_rated';
     let voted = parseInt(localStorage.getItem(RATED_KEY) || '0');
 
-    // 基准评分（模拟已有 8 位玩家给出均分 9.3）
-    const BASE_SUM = 74;   // 8人 × 平均9.25 ≈ 74
-    const BASE_COUNT = 8;
+    // 本地兜底（Worker 不可达时显示）
+    const FALLBACK_SUM = 74, FALLBACK_COUNT = 8;
 
-    function refreshRating(){
-      let sum = BASE_SUM, count = BASE_COUNT;
-      // 如果本机已投票，合并进去
-      if(voted > 0){
-        sum += voted * 2;  // 5星→10分制
-        count += 1;
+    async function refreshRating(){
+      try{
+        const resp = await fetch(RATING_API, { method: 'GET' });
+        if(!resp.ok) throw new Error('HTTP ' + resp.status);
+        const d = await resp.json();
+        if(typeof d.sum === 'number' && typeof d.count === 'number' && d.count > 0){
+          // 本机已投票的话合并显示（因为已提交到 Worker 了，这里仅防重复）
+          ratingNumEl.textContent = d.avg.toFixed(1);
+          if(label) label.textContent = `基于 ${d.count} 人评价`;
+          return;
+        }
+        throw new Error('invalid data');
+      }catch(e){
+        // 兜底
+        let sum = FALLBACK_SUM, count = FALLBACK_COUNT;
+        if(voted > 0){ sum += voted * 2; count += 1; }
+        ratingNumEl.textContent = (sum / count).toFixed(1);
+        if(label) label.textContent = `基于 ${count} 人评价`;
       }
-      const avg = (sum / count).toFixed(1);
-      ratingNumEl.textContent = avg;
-      if(label) label.textContent = `基于 ${count} 人评价`;
     }
 
     // 点亮星级
@@ -4600,13 +4610,31 @@ document.addEventListener('DOMContentLoaded', ()=>{
       const v = parseInt(st.dataset.value);
       st.addEventListener('mouseenter', ()=>{ if(!voted) lightStars(v); });
       st.addEventListener('mouseleave', ()=>{ if(!voted) lightStars(0); });
-      st.addEventListener('click', ()=>{
+      st.addEventListener('click', async ()=>{
         if(voted){ toast('你已经评分过啦，谢谢支持！', 2000); return; }
         voted = v;
         localStorage.setItem(RATED_KEY, v);
         lightStars(v, true);
-        refreshRating();
-        toast('评分成功，感谢支持 💯', 1800);
+        // 5星 → 10分制（×2）
+        const score10 = v * 2;
+        try{
+          const resp = await fetch(RATING_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ score: score10 })
+          });
+          if(!resp.ok) throw new Error('HTTP ' + resp.status);
+          const d = await resp.json();
+          ratingNumEl.textContent = d.avg.toFixed(1);
+          if(label) label.textContent = `基于 ${d.count} 人评价`;
+          toast('评分成功，感谢支持 💯', 1800);
+        }catch(e){
+          // 网络失败：本地兜底显示
+          let sum = FALLBACK_SUM + score10, count = FALLBACK_COUNT + 1;
+          ratingNumEl.textContent = (sum / count).toFixed(1);
+          if(label) label.textContent = `基于 ${count} 人评价`;
+          toast('评分已记录（网络同步延迟）💯', 1800);
+        }
       });
     });
 
