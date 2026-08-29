@@ -35,5 +35,5 @@
 
 ## 第三方接入（可选）
 
-- **评分系统**：jsonbin.io 存放累计评分 `sum/count`，ID 在 `index.html` 的 `JSONBIN_BIN_ID`
+- **评分系统**：Cloudflare Workers + KV（namespace `RATING_KV`，key=`rating` → `{sum,count}`）实现真共享评分；Worker URL 在 `index.html` 的 `RATING_API`，源码在 `worker/worker.js`。Worker 不可达时回退到本地兜底数值显示。
 - **访问统计**：GoatCounter 图片像素统计，代码在 `index.html` 的 `GoatCounter` 相关区块

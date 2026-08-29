@@ -149,6 +149,7 @@ description: "生成单文件 HTML 推理/RPG 网页游戏的标准工作流：�
 | 结局存档  | 触发结局后存档已清？"继续游戏"已隐藏？returnToCover 不重写结局存档？ |
 | 时间线入口 | 推论未完成时只显示推论入口？全完成时只显示时间线？     |
 | 布局  | 六边形雷达图是否固定高度？称号列表是否可滚动？不被挤没？ |
+| 评分系统 | 用 Cloudflare Workers+KV 真共享？Worker URL 配在 `RATING_API`？本地兜底数值合理？五星→十分制（×2）转换正确？已投票 localStorage 防重？ |
 
 ***
 
@@ -171,6 +172,7 @@ description: "生成单文件 HTML 推理/RPG 网页游戏的标准工作流：�
 - **多结局节点选项必须水平展开**：垂直堆叠会导致结局链水平重叠；子节点选项 y 必须在父节点下方，不能和父节点同 y
 - **推论 reward 分散化**：全给一个属性会导致数值悬殊（如旧版 ded31 vs shen8），推论本身是"理解角色动机"的载体，给对应的情感属性更合理
 - **六边形雷达图 CSS**：不要用 `height:auto;aspect-ratio:1/1`（flex 布局会被压到 0），用 `flex:0 0 固定值; height:固定值`；称号列表用 `flex:1 1 auto; overflow-y:auto` 可滚动
+- **评分系统禁用 jsonbin**：私有 bin 通过 `file://` 访问会 CORS，公开 bin 又任何人可改，不靠谱。统一用 **Cloudflare Workers + KV**：`worker/worker.js` 暴露 GET（返回 `{sum,count,avg}`）/POST（body `{score:1-10}` 更新累加）两个接口，KV namespace 名固定 `RATING_KV`，key=`rating` 存 `{sum,count}`。前端 `RATING_API` 常量配 Worker URL，Worker 不可达时用本地 `FALLBACK_SUM/FALLBACK_COUNT` 兜底显示。五星评分提交时乘 2 转十分制；localStorage `rpgGame_rated` 存已投分值防重复投票。Worker 侧已处理 OPTIONS 预检 + `Access-Control-Allow-Origin:*`。
 
 ***
 
