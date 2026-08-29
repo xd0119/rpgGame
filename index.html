@@ -2264,6 +2264,7 @@ const ABILITY_DEFS = [
 // 标记能力图鉴是否从结局画面打开：关闭时需自动回首页，避免玩家卡在游戏场景
 let abilityFromEnding = false;
 function openAbilityChart(){
+  tryMobileFullscreen();
   // 在 16:9 画布内显示能力图鉴（保持画幅，不放大）
   // 若当前处于结局节点，标记"从结局打开"——关闭后自动回首页封面
   const curNode = SCRIPT[state.nodeId];
@@ -4027,6 +4028,7 @@ function returnToCover(){
   toast(atEnding ? '已回到首页，本局已结束' : '已回到首页，点击「继续游戏」返回', 2500);
 }
 function resumeGame(){
+  tryMobileFullscreen();
   // 从 localStorage 读取存档并恢复 state（页面刷新/重开时内存state已重置，必须从存档恢复）
   try{
     const raw = localStorage.getItem(SAVE_KEY);
@@ -4124,11 +4126,13 @@ function loadGame(){
    新游戏 + 自定义姓名
    ========================================================= */
 function startNewGame(){
+  tryMobileFullscreen();
   $('nameInput').value = '';
   $('nameModal').classList.add('show');
   setTimeout(()=>$('nameInput').focus(), 100);
 }
 function confirmName(){
+  tryMobileFullscreen();
   let n = $('nameInput').value.trim();
   if(!n) n = '林小鹿';
   if(n.length > 5) n = n.slice(0, 5);
@@ -4171,6 +4175,7 @@ $('nameInput').addEventListener('keydown', e=>{
 let branchViewState = { scale: 1, offsetX: 0, offsetY: 0 };
 
 function openBranchDiagram(){
+  tryMobileFullscreen();
   const log = state.branchLog;
   const empty = $('branchEmpty');
   if(log.length === 0){
@@ -5137,6 +5142,20 @@ document.addEventListener('DOMContentLoaded', ()=>{
     }
   }
   window.toggleFullscreen = toggleFullscreen;
+
+  // 移动端用户手势触发时自动尝试进入全屏（PC端直接跳过，失败静默不影响业务）
+  function tryMobileFullscreen(){
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile|HarmonyOS|MIUI|OPPO|vivo|Huawei/i.test(navigator.userAgent);
+    if(!isMobile) return;
+    const el = document.documentElement;
+    const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+    if(isFs) return;
+    try{
+      const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+      if(fn) fn.call(el);
+    }catch(e){}
+  }
+  window.tryMobileFullscreen = tryMobileFullscreen;
 
   // Tab 切换
   document.querySelectorAll('.ci-tab').forEach(tab=>{
