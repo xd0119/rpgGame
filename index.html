@@ -2805,10 +2805,26 @@ function nextLine(){
         const estTypeMs = Math.min(1800, (String(raw).length * 30) + 120);
         // 🔎 自动进搜证的timer用全局变量保存，避免"玩家手动点击进搜证 / 切节点 / 搜完继续"之后 timer 还残留触发
         clearTimeout(_autoSearchTimer);
-        _autoSearchTimer = setTimeout(()=>{
-          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-          // 如果玩家在等待期间主动点了一下触发了 nextLine，就不会再到这里（lineIdx > len 会 fail）
-          if(lineIdx >= currentLines.length) showHotspots(node.search);
+        _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
+          retryRemain = typeof retryRemain === 'number' ? retryRemain : 20; // 最多重试 20×200ms=4s，兜底防卡
+          // ✅ 问题1修复：双条件（lineIdx越过最后一行 + typeWriter写完）才真正进入搜证
+          //   防止"放大镜提示句的逐字还没显示完/玩家还没看完，热点就先弹出来盖住对白和人物立绘"
+          if(lineIdx >= currentLines.length && typingDone === true){
+            clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+            showHotspots(node.search);
+            return;
+          }
+          if(retryRemain <= 0){ // 重试兜底：4秒超时还没写完 → 强制跳到typeWriter末尾再立即执行
+            clearInterval(typingTimer); typingDone = true;
+            try {
+              const last = currentLines[currentLines.length-1];
+              if(last){ $('dialogueText').textContent = (last.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
+            }catch(e){}
+            clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+            showHotspots(node.search);
+            return;
+          }
+          _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
         }, estTypeMs + 1500);
         return; // 不等玩家继续点
       }
@@ -2829,13 +2845,30 @@ function nextLine(){
   }
   const node = SCRIPT[state.nodeId];
   if(node.search){
+    // ✅ 问题1修复：手动点空白进搜证，也要求 typeWriter 真正写完（typingDone=true）
+    //   如果玩家加速typeWriter刚点完，立即再点一下空白 → 就会走到这里立即showHotspots
+    //   如果typeWriter还在写（说明玩家还没加速完最后一句）→ 强制跳到最后一字，**return不进搜证**
+    //   让玩家再点一次空白 → 这时typingDone=true，才真正进搜证。
+    if(typingDone !== true){
+      clearInterval(typingTimer); typingDone = true;
+      try{
+        const cur = currentLines[Math.max(0,lineIdx-1)];
+        if(cur){ $('dialogueText').textContent = (cur.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
+      }catch(e){}
+      return;
+    }
     // 🔎 玩家主动推进进搜证：清掉还没到点的自动进搜证 timer，避免触发两次 showHotspots 造成立绘/台词错乱
     clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
     showHotspots(node.search); return;
   }
   if(node.requireDed){ waitDeduction(node.requireDed, node.next); return; }
   if(node.tl){ openTimeline(()=>playNode(node.next)); return; }
-  if(node.choices){ showChoices(node.choices); return; }
+  if(node.choices){
+    // ✅ 问题2+3双保险：盘问选项面板打开前，强制清空对话框残留的上一句台词
+    //   （放大镜搜证提示句 / 陈老板"知无不言" / 许管家"是我下的…一口没喝啊"等）
+    clearDialogue();
+    showChoices(node.choices); return;
+  }
   if(node.next){ playNode(node.next); }
 }
 
@@ -2988,6 +3021,10 @@ function showChoices(choices){
   const __chDbx = $('dialogueBox');
   if(__chDbx){ __chDbx.classList.remove('search-hidden'); __chDbx.style.display = ''; }
   showDialogueBox();
+  // ✅ 问题2+3：第4条兜底 · 打开选项面板前先清空对话框！
+  //   ——这是放大镜句 / 知无不言 / 许管家"是我下的" 三类重复的根因。
+  //     只要选项面板一出现，对话框里的上一句必然清掉，不会再出现"选项浮在背景台词上面"的错觉。
+  clearDialogue();
   const c = $('choices');
   c.innerHTML = '';
   // 选项出现时切换左右分栏布局：立绘在左，选项在右，避免遮挡
@@ -3330,6 +3367,10 @@ function advanceAfterSearch(){
     pendingAfterLines = triggerLines;
     pendingThen = ()=>{
       const node = SCRIPT[state.nodeId];
+      // ✅ 问题2+3：搜证后触发支线（沈同学外婆/许管家擦泪）播完后→开options前先清台
+      //   防止：最后一句「许管家走廊攥旧照片/沈同学外婆台词」的文本，在选项打开时还残留在对话框里
+      clearDialogue();
+      showDialogueBox();
       if(node && node.choices) showChoices(node.choices);
       else if(node && node.next) playNode(node.next);
     };
@@ -3337,7 +3378,11 @@ function advanceAfterSearch(){
     return;
   }
   const node = SCRIPT[state.nodeId];
-  if(node && node.choices) showChoices(node.choices);
+  if(node && node.choices){
+    // ✅ 问题2+3：搜证后无支线 → 直接开options前 → 再双保险 clearDialogue
+    clearDialogue();
+    showChoices(node.choices);
+  }
   else if(node && node.next) playNode(node.next);
   else toast('提示：未配置下一节点', 2200);
 }
