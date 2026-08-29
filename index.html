@@ -5189,7 +5189,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
     Object.entries(charsWithDead).forEach(([key,c])=>{
       // 女主/陆社长/沈翊然 + 4 嫌疑人 用 jpg（有 jpg 就用 jpg，png 留给立绘）
       let img = c.img;
-      if(jpgOverride[key] && key !== 'xu') img = jpgOverride[key];
+      if(jpgOverride[key]) img = jpgOverride[key];
       // 小传只放搜证前可知道的信息（杀机密信息截断）
       let bio = c.bio || c.desc || '';
       if(!c.bio){
