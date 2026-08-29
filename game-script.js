@@ -13,7 +13,7 @@ const CHARACTERS = {
     desc:'陈茉莉旧友。非知名作者，儿子今年22岁' },
   zhou: { name:'周编辑', role:'出版社编辑', img:'assets/characters/npc_zhou_editor.png',
     desc:'陈茉莉编辑' },
-  xu:   { name:'许管家', role:'陈家老管家', img:'assets/characters/npc_xu_housekeeper.png',
+  xu:   { name:'许管家', role:'陈家老管家', img:'assets/characters/npc_xu_housekeeper.jpg',
     desc:'陈茉莉管家。30年前儿子抑郁离世' },
 };
 
