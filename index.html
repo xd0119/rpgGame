@@ -2853,6 +2853,47 @@ function nextLine(){
   }
   const node = SCRIPT[state.nodeId];
   if(node.search){
+    // ✅ node7"对白未播完就进搜证"回归·前置双保险：
+    //   正常流程是分支1播完currentLines所有台词（lineIdx++直到>=len）才会掉到这里。
+    //   但如果出现竞态（分支1的return被某个状态跳过、或其它函数提前nextLine）导致lineIdx还小于currentLines.length
+    //   就直接进入下面的"typingDone===true → showHotspots"判定 → 热点提前出、对白还在显示。
+    //   防御：在这里**再套一层与分支1等价的前置判断**——台词还没播完就强行推进到最后一句（与分支1的推进逻辑完全一致），绝不直接进showHotspots。
+    if(lineIdx < currentLines.length - 1){
+      lineIdx = currentLines.length - 1;
+      clearInterval(typingTimer); typingDone = true;
+      const last = currentLines[lineIdx];
+      $('dialogueSpeaker').textContent = last.s ? last.s.replace('女主', state.heroine) : '';
+      $('dialogueText').textContent = (last.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n');
+      $('dialogueText').classList.add('done');
+      // 与分支1同口径：最后一句如果是搜证提示句，也顺手设一下自动进搜证timer（防漏）
+      if(last && /搜证模式|放大镜搜证|点击发光的线索|搜集线索|找出.*线索|找到.*物证|开启放大镜|搜证完成|二次搜证开启|搜证开启/g.test(String(last.c||'') + String(last.t||''))){
+        const raw = String(last.c||'') + String(last.t||'');
+        const estTypeMs = Math.min(1800, (raw.length * 30) + 120);
+        clearTimeout(_autoSearchTimer);
+        _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
+          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+          retryRemain = typeof retryRemain === 'number' ? retryRemain : 6;
+          if(lineIdx >= currentLines.length && typingDone === true){
+            clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+            showHotspots(node.search);
+            return;
+          }
+          if(retryRemain <= 0){
+            clearInterval(typingTimer); typingDone = true;
+            try{
+              const l = currentLines[currentLines.length-1];
+              if(l){ $('dialogueText').textContent = (l.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
+            }catch(e){}
+            clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+            showHotspots(node.search);
+            return;
+          }
+          clearTimeout(_autoSearchTimer);
+          _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
+        }, estTypeMs + 1500);
+      }
+      return;
+    }
     // ✅ 问题1修复：手动点空白进搜证，也要求 typeWriter 真正写完（typingDone=true）
     //   如果玩家加速typeWriter刚点完，立即再点一下空白 → 就会走到这里立即showHotspots
     //   如果typeWriter还在写（说明玩家还没加速完最后一句）→ 强制跳到最后一字，**return不进搜证**
@@ -3237,7 +3278,15 @@ function showDialogueBox(){
 }
 function hideDialogueBox(){
   const d = $('dialogueBox');
-  if(d){ d.classList.add('search-hidden'); }
+  if(d){
+    d.classList.add('search-hidden');
+    // ✅ node7"对白还在显示+搜证热点一次性浮出"回归·双保险：
+    //   原实现仅依赖 classList.add('search-hidden') → CSS display:none 隐藏对话框
+    //   但之前修复"立绘残留+无对话框"时，在showPortrait/showChoices入口增加了"兜底remove search-hidden + showDialogueBox()"（为了任何情况对话框都能出来）
+    //   当上述兜底函数在showHotspots.hideDialogueBox()之后**同一帧稍后执行**（例如：刚进搜证，typeWriter还在逐字播放陆社长对白 → showLine→showPortrait触发兜底）→ search-hidden类被remove → 对话框重新显露出旧对白 → "白没说完、热点先弹"的回归视觉
+    //   修复：加 style.display='none' 作为类名隐藏的第二道锁；即使 search-hidden 被其他兜底 remove，style.display='none'也会强制隐藏，直到显式调用 showDialogueBox() 才恢复。
+    d.style.display = 'none';
+  }
 }
 // 上一条选择的中文摘要（由 showChoices 点击处理时写入，供 applyEff 用作 reason）
 let _lastChoiceSummary = '';
