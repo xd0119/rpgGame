@@ -35,6 +35,7 @@ description: "生成单文件 HTML 推理/RPG 网页游戏的标准工作流：�
 5. 是否需要「二次搜证」扩展（ext 节点，搜证后再开放新热点）？
 6. 盘问后是否需要追问模块？——默认每个嫌疑人有 2-3 个未问问题可追问
 7. 推论完成度是否影响后续节点入口？——默认时间线入口需全部手动推论完成
+8. 搜证触发机制？——**强烈禁止依赖对白末尾的"放大镜搜证开启"关键词正则匹配**（对白改字/漏字/翻译都会导致搜证不触发/提前触发，是典型脆弱耦合源）。统一改为：节点配置 `node.search` 字段显式标记搜证节点 → 最后一句对白显示完毕后设置「等待玩家再点一下空白」状态门控 → 玩家主动点击空白时 → toast 轻量提示 + 调用 `showHotspots` 进入搜证模式；对白文件 `game-script.js` 不再保留放大镜提示句旁白。（如果需要差异化提示，按节点在公共 `buildSearchHintToast(node)` 里集中维护文案）
 
 ### D. UI 与布局
 
@@ -67,7 +68,7 @@ description: "生成单文件 HTML 推理/RPG 网页游戏的标准工作流：�
 1. **16:9 game-canvas 容器**：所有 UI 用 `absolute` 挂载其内，禁止 `fixed` 相对网页定位
 2. **封面菜单**：新游戏 / 剧情脉络 / 能力图鉴（顺序固定，不设全屏封面/结局图鉴）
 3. **节点系统**：`SCRIPT` 对象（每个节点含 `bg/lines/choices/requireDed/hotspots/next` 等）+ `SCENE_NAMES` 中文映射
-4. **搜证**：`HOTSPOTS` 热点 + 搜证后 `showSearchContinueBar()` 显示「▶ 继续剧情」按钮
+4. **搜证**：`HOTSPOTS` 热点 + 搜证后 `showSearchContinueBar()` 显示「▶ 继续剧情」按钮 + 触发机制**禁止对白正则依赖**（改为 `node.search` 配置存在 + `_searchWaitingForClick` 状态门控：播完最后一句对白→设置等待点击标记→玩家主动点空白→toast+showHotspots；对白台词文件里**不再写放大镜提示句旁白**，文案集中在公共 `buildSearchHintToast()` 维护）
 5. **推论**：5 槽位点击填入 + 失败计数 + 失败6次浮现「💡 查看提示」按钮弹窗 + 放弃推理扣值
 6. **数值**：6 项能力（推理 lu/共情 shen/洞察 ded/观察 obs/直觉 int/勇气 cou）+ 六边形雷达图 + **statLog 全量记录**（所有加/减分同步写 `state.statLog[key].push({reason, amount, time})`，用于能力图鉴点击查明细）
 7. **剧情脉络**：SVG 全节点预渲染 + `localStorage` 探索计数（`markExplored/isExplored`）+ 未探索「???」占位；**过渡节点不要放进 mainTrunk**（只放主干剧情节点）；多结局节点选项**水平展开**（不同 x 坐标），结局链垂直向下不重叠
@@ -140,7 +141,8 @@ description: "生成单文件 HTML 推理/RPG 网页游戏的标准工作流：�
 | 盘问    | 对话框+打字机？点击推进？追问模块？           |
 | 选项    | 只留剧情推进类？删查看页面？                    |
 | 搜证后   | 显示按钮？禁止自动跳转？                      |
-| 剧情脉络  | 默认全节点？未探索显示「???」？主干无过渡节点？多结局选项水平展开？无重叠？ |
+| 搜证触发  | 禁止依赖对白台词正则/关键词？统一用 `node.search` 配置+等待点击状态门控？对白台词里不再写放大镜提示句？公共 `buildSearchHintToast()` 维护文案？ |
+| 剧情脉络  | 默认全节点？未探索显示「???」？主干无过渡节点？多结局选项水平展开？无重叠？放大上限18倍？移动端单指drag+双指pinch？ |
 | 嫌疑人在场 | 逻辑合理？                             |
 | 证据持久  | 有解释？                              |
 | 推论失败  | 6次后查看提示弹窗？放弃扣值+兜底结局？              |
@@ -159,6 +161,7 @@ description: "生成单文件 HTML 推理/RPG 网页游戏的标准工作流：�
 - 立绘去背景用硬阈值（RGB≥248）+连通保护，软阈值会丢五官
 - 群像显示必须显式隐藏单人层，否则会和主角重叠
 - 搜证后禁止自动跳转 choice 页，必须给「▶ 继续剧情」按钮
+- **搜证触发禁止依赖对白台词正则/关键词**。统一实现：`if(lineIdx >= currentLines.length && node.search) { window._searchWaitingForClick = true; return; }`（播完最后一句对白保留对白显示给玩家读）→ 下一帧 `nextLine()` 分支4 `node.search` 开头 `if(_searchWaitingForClick===true) { 重置标记; toast(buildSearchHintToast(node)); 显示极小占位符; showHotspots(node.search); return; }`（玩家点空白确认读完对白才进搜证）。对白台词文件里永远不要出现"放大镜搜证模式开启""二次搜证开启"等提示句旁白；节点差异化提示文案集中在公共 `buildSearchHintToast(node)`（按 ext/node8/默认三档维护）。三大防御重置不可少：playNode 切节点开头 `_searchWaitingForClick=false` / `doApplyJump` 回跳收口同重置 / 分支4前置拦截 `lineIdx<len` 推进越过台词后仍设 waiting 标记（给玩家看最后一句）
 - 推论系统：失败6次后弹「查看提示」按钮（不要把提示常驻底部），放弃推理扣值+3次触发兜底结局
 - `Date.now()` 别少括号；拖拽合成逻辑复杂易错→能用自动解锁就别手写合成
 - koa-connect 包装会 ctx 泄漏→原生 Koa 重写
