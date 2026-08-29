@@ -625,9 +625,11 @@ button{font-family:inherit}
 .game-inner.search-mode{
   cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'><circle cx='14' cy='14' r='10' fill='rgba(255,211,110,0.12)' stroke='%23ffd36e' stroke-width='2.5'/><line x1='21' y1='21' x2='31' y2='31' stroke='%23ffd36e' stroke-width='3.2' stroke-linecap='round'/></svg>") 16 16, zoom-in;
 }
+/* 🔎 搜证模式：隐藏底部对话框与选项，让玩家聚焦背景线索 */
 .game-inner.search-mode .dialogue-box,
-.game-inner.search-mode .canvas-tools,
-.game-inner.search-mode .canvas-panel{cursor:auto}
+.game-inner.search-mode .choices,
+.game-inner.search-mode .canvas-panel{display:none !important}
+.game-inner.search-mode .canvas-tools{cursor:auto}
 
 /* 选项 —— 默认与立绘左右分栏：右 48% 垂直居中，立绘占左 52%，永远不遮挡 */
 .choices{
@@ -711,7 +713,9 @@ button{font-family:inherit}
   background:linear-gradient(180deg,rgba(26,29,46,.85),rgba(26,29,46,.96));
   border-top:1.5px solid #3d6ba0;backdrop-filter:blur(8px);
   padding:14px 22px 16px;min-height:110px;
+  transition:opacity .25s, transform .25s;
 }
+.dialogue-box.search-hidden{opacity:0;transform:translateY(100%);pointer-events:none;display:none !important}
 .speaker{
   display:inline-block;font-size:15px;font-weight:700;
   color:#d7c7ff;margin-bottom:6px;padding:2px 14px;border-radius:14px;
@@ -963,16 +967,16 @@ button{font-family:inherit}
 /* ========== 线索弹窗：统一高度 + 内置滚动条 ========== */
 .clue-modal-inner{
   position:relative;
-  width:min(420px,90%);
+  width:min(500px,90%);
   max-height:min(82vh,560px);   /* 统一最大高度：不超窗口 82% 或 560px */
   background:linear-gradient(160deg,#1a2d47,#142236);
   border:2px solid #4a89dc;border-radius:14px;overflow:hidden;
   box-shadow:0 14px 40px rgba(74,137,220,.35);
   display:flex;flex-direction:column;
 }
-/* 图片线索区域：超图不超 58%，小图完整显示 */
+/* 图片线索区域：小图完整显示，超图限制最大 40% 避免压垮文字 */
 .clue-modal-img{
-  max-height:58%;width:100%;object-fit:contain;background:#0d1a2a;
+  max-height:40%;width:100%;object-fit:contain;background:#0d1a2a;
   flex-shrink:0;border-bottom:1px solid #2a4a7a;
 }
 /* 文档线索区域：固定占 60%，超出则滚 */
@@ -1871,8 +1875,8 @@ button{font-family:inherit}
               <div class="ci-stat-label">累计游玩</div>
             </div>
             <div class="ci-stat-card">
-              <div class="ci-stat-num ci-num-yellow" id="ciRatingNum">10.0</div>
-              <div class="ci-stat-label ci-rating-label">基于 1 人评价</div>
+              <div class="ci-stat-num ci-num-yellow" id="ciRatingNum">——</div>
+              <div class="ci-stat-label ci-rating-label">正在更新…</div>
               <div class="ci-rating-stars">
                 <span class="ci-rating-star" data-value="1">★</span>
                 <span class="ci-rating-star" data-value="2">★</span>
@@ -2601,7 +2605,6 @@ let pendingAfterLines = [], pendingThen = null;  // 选项后追加"嫌疑人回
 
 async function playNode(nodeId){
   state.nodeId = nodeId;
-  // 记录探索到 localStorage，供脉络树展示真实内容（否则灰色???）
   markExplored(nodeId);
   const node = SCRIPT[nodeId];
   if(!node){ toast('剧本节点丢失：' + nodeId); return; }
@@ -2609,14 +2612,11 @@ async function playNode(nodeId){
   if(node.bgm) playBgm(node.bgm);
   if(node.end){ showEnding(node.end); return; }
 
-  // 🔒 保险：进入游戏节点前，强制隐藏画布内的封面/菜单遮罩（canvasCover z-index:50 会挡住所有背景，
-  // 导致玩家看到的是暗色菜单底纹，误以为背景"完全没切换"）
   try {
     const cc = $('canvasCover');
     if(cc) cc.classList.remove('show');
   } catch(e){}
 
-  // ====== 双缓冲背景：必须等新背景解码+淡入完才推剧情，避免背景"慢半拍"
   if(node.bg) await setBg(node.bg);
   else await Promise.resolve();
 
@@ -2626,12 +2626,15 @@ async function playNode(nodeId){
   clearHotspots();
   hideChoices();
   hidePortrait();
+  // 🔒 切换节点时必须清台（尤其是选项→下一个节点的过渡，
+  //   否则上一节点最后一句会短暂闪现 —— 比如 Q1 "知无不言"跳 node4）
+  clearDialogue();
+  showDialogueBox();
 
   currentLines = node.lines || [];
   lineIdx = 0;
   pendingAfterLines = []; pendingThen = null;
   setStatsUI();
-  // 自动存档：每次进入新节点时保存进度，确保"继续游戏"永远可用
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
   nextLine();
 }
@@ -2954,6 +2957,23 @@ function hideChoices(){
   $('choices').classList.remove('show');
   $('gameInner').classList.remove('choices-open');
 }
+// 清除 / 显示 对话框（切换节点 / 搜证模式用）
+function clearDialogue(){
+  // 重置打字机状态，避免逐字还没播完跳到下一节点时显示旧内容
+  clearInterval(window.typingTimer);
+  window.typingDone = true;
+  const t = $('dialogueText'); const spk = $('speaker');
+  if(t){ t.textContent = ''; t.classList.add('done'); }
+  if(spk){ spk.textContent = ''; spk.className = 'speaker'; }
+}
+function showDialogueBox(){
+  const d = $('dialogueBox');
+  if(d){ d.style.display = ''; d.classList.remove('search-hidden'); }
+}
+function hideDialogueBox(){
+  const d = $('dialogueBox');
+  if(d){ d.classList.add('search-hidden'); }
+}
 // 上一条选择的中文摘要（由 showChoices 点击处理时写入，供 applyEff 用作 reason）
 let _lastChoiceSummary = '';
 function applyEff(eff, choiceSummary){
@@ -3000,6 +3020,9 @@ function clearHotspots(){
 }
 function showHotspots(cfg){
   $('gameInner').classList.add('search-mode'); // 鼠标切放大镜
+  hideDialogueBox();   // 🔎 搜证模式：隐藏底部对话框，聚焦背景
+  hideChoices();
+  clearDialogue();     // 避免旧台词在搜证模式下闪一下
   const arr = HOTSPOTS[cfg.bgKey] || [];
   const wrap = $('hotspots');
   wrap.innerHTML = '';
@@ -3022,7 +3045,6 @@ function showHotspots(cfg){
     d.onclick = (e)=>{
       e.stopPropagation();
       if(isFake){
-        // 干扰物：显示环境描述，不拾取线索，可反复查看
         toast('🔎 ' + h.fake, 2400);
         return;
       }
@@ -3061,13 +3083,14 @@ function closeSearchContinueBar(){
 }
 function advanceAfterSearch(){
   closeSearchContinueBar();
-  // 关闭所有可能打开的画布面板/弹窗：线索放大弹窗、线索背包、推论面板、时间线面板
   closeMask('clueModal');
   closeMask('invPanel');
   closeMask('dedPanel');
   closeMask('tlPanel');
   clearHotspots();
   $('gameInner').classList.remove('search-mode');
+  showDialogueBox();   // 搜证结束 → 恢复底部对话框
+  clearDialogue();     // 重置文本避免搜证前内容残留
   // ===== 条件触发支线：搜证后检查特定线索触发额外台词 =====
   const triggerLines = [];
   if(state.nodeId === 'node3' && state.clues.includes('task_note')){
