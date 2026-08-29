@@ -2795,7 +2795,9 @@ function nextLine(){
     const node = SCRIPT[state.nodeId];
     if(isLastLine && node && node.search){
       const raw = (line.c || '') + (line.t || '');   // 合并 c 与 t
-      if(/搜证模式|放大镜搜证|点击发光的线索|搜集线索|找出.*线索|找到.*物证|开启放大镜|搜证完成/g.test(raw)){
+      // ✅ 方向1：正则增强 —— 新增匹配「二次搜证开启」(ext节点) / 「搜证开启」(通用变体)
+      //   原关键词只覆盖"放大镜搜证/搜证模式"，漏掉了ext的"二次搜证开启"，导致ext不走修复链路
+      if(/搜证模式|放大镜搜证|点击发光的线索|搜集线索|找出.*线索|找到.*物证|开启放大镜|搜证完成|二次搜证开启|搜证开启/g.test(raw)){
         // 🔥 不要在这里 hideDialogueBox！
         //   之前错误写法：立即 hideDialogueBox() → 打字机还在播放提示句 + 1500ms阅读期
         //      这段时间"对话框已消失 + 搜证热点还没出现" → 空白卡死感 + 立绘残留
@@ -2806,15 +2808,19 @@ function nextLine(){
         // 🔎 自动进搜证的timer用全局变量保存，避免"玩家手动点击进搜证 / 切节点 / 搜完继续"之后 timer 还残留触发
         clearTimeout(_autoSearchTimer);
         _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
-          retryRemain = typeof retryRemain === 'number' ? retryRemain : 20; // 最多重试 20×200ms=4s，兜底防卡
-          // ✅ 问题1修复：双条件（lineIdx越过最后一行 + typeWriter写完）才真正进入搜证
+          // ✅ 方向3（第1处）：每次递归前，强制清掉上一轮遗留的 timer（避免浏览器队列里同时有20个存活timer → 连续触发showHotspots和toast）
+          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+          // 方向3（第2处）：重试次数从 20×200ms=4s 收敛为 6×200ms=1.2s
+          //   因为 typeWriter 一般最长 1.8s 完成，再给 1.2s 等待足够了；再久就是真卡死，走超时强制分支
+          retryRemain = typeof retryRemain === 'number' ? retryRemain : 6;
+          // ✅ 双条件（lineIdx越过最后一行 + typeWriter写完）才真正进入搜证
           //   防止"放大镜提示句的逐字还没显示完/玩家还没看完，热点就先弹出来盖住对白和人物立绘"
           if(lineIdx >= currentLines.length && typingDone === true){
             clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
             showHotspots(node.search);
             return;
           }
-          if(retryRemain <= 0){ // 重试兜底：4秒超时还没写完 → 强制跳到typeWriter末尾再立即执行
+          if(retryRemain <= 0){ // 重试兜底：1.2s超时还没写完 → 强制跳到typeWriter末尾再立即执行
             clearInterval(typingTimer); typingDone = true;
             try {
               const last = currentLines[currentLines.length-1];
@@ -2824,6 +2830,8 @@ function nextLine(){
             showHotspots(node.search);
             return;
           }
+          // ✅ 方向3（第3处）：递归设下一次 200ms timer 前，再次 clearTimeout 旧 timer（保险）
+          clearTimeout(_autoSearchTimer);
           _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
         }, estTypeMs + 1500);
         return; // 不等玩家继续点
@@ -3323,7 +3331,10 @@ function showSearchContinueBar(){
   if($('searchContinueBar')) return; // 已显示
   const bar = document.createElement('div');
   bar.id = 'searchContinueBar';
-  bar.style.cssText = 'position:absolute;left:50%;bottom:8%;transform:translateX(-50%);z-index:60;display:flex;gap:14px;align-items:center;';
+  // ✅ 方向2：z-index 60 → 88
+  //   原 60 < .clue-modal(z80) → 玩家捡最后一条线索时，线索弹窗直接盖住了继续按钮 → 玩家以为"按钮没生成"
+  //   提为 88（比 clue-modal z80 再高 8 点余量）→ 即使线索弹窗开着，继续按钮也浮在最上层，玩家一眼能看到
+  bar.style.cssText = 'position:absolute;left:50%;bottom:8%;transform:translateX(-50%);z-index:88;display:flex;gap:14px;align-items:center;';
   bar.innerHTML = `
     <button class="btn primary" onclick="advanceAfterSearch()" style="padding:12px 28px;font-size:16px;border-radius:10px;letter-spacing:1px;">▶ 继续剧情</button>
   `;
