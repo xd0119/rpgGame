@@ -2703,6 +2703,9 @@ async function playNode(nodeId){
   // ⚠️ 跨节点防御性清理：防止遗留的定时器 / 追加台词 污染下一节点
   clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
   pendingAfterLines = []; pendingThen = null;
+  // ✅ 搜证触发改"等待玩家再点一下才进"的状态门控重置
+  //   节点切换时清除上一搜证节点遗留的"等待点击"标记，避免回跳/切换节点后残留导致"点空白就直接进搜证"
+  window._searchWaitingForClick = false;
 
   // 📸【快照】立刻拍下进入此节点时的【数值与标记】（剧情脉络回跳用，线索/推论/盘问不在里面）
   //    只在第一次进入该节点（或没快照时）拍，避免后续重选选项覆盖最初值
@@ -2795,35 +2798,15 @@ function nextLine(){
   //   —— 不再让 SCRIPT 的台词文本和"何时进搜证"这个核心状态机产生耦合，减少"台词改了/正则漏了/拼写错了 → 搜证不触发"的bug
   const __curNode = SCRIPT[state.nodeId];
   if(lineIdx >= currentLines.length && __curNode && __curNode.search){
-    toast(buildSearchHintToast(__curNode), 2600);
-    // 立即停 typeWriter + 清空对话框占位
-    clearInterval(window.typingTimer);
-    window.typingDone = true; typingDone = true;
-    const __dTx = $('dialogueText'); if(__dTx){ __dTx.textContent = '・'; __dTx.classList.add('done'); } // 最小占位符（不抢视觉焦点）
-    const __dSpk = $('speaker'); if(__dSpk){ __dSpk.textContent = ''; __dSpk.className = 'speaker'; }
-    // 固定 1.5s 阅读期（给 toast 读），然后自动进搜证
-    clearTimeout(_autoSearchTimer);
-    _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
-      clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-      retryRemain = typeof retryRemain === 'number' ? retryRemain : 6;
-      if(lineIdx >= currentLines.length && typingDone === true){
-        clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-        showHotspots(__curNode.search);
-        return;
-      }
-      if(retryRemain <= 0){
-        clearInterval(typingTimer); typingDone = true;
-        try {
-          const last = currentLines[currentLines.length-1];
-          if(last){ $('dialogueText').textContent = (last.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
-        }catch(e){}
-        clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-        showHotspots(__curNode.search);
-        return;
-      }
-      clearTimeout(_autoSearchTimer);
-      _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
-    }, 1500);
+    // ✅ 用户主诉："台词播完立刻进入搜证，太快看不全文字"
+    //   改前：播完最后一句对白立即清对白占位 → 1.5s AutoSearchTimer 自动进搜证 → 玩家还没看最后一句对白就进搜证了
+    //   改后：播完最后一句对白 → 仅设置「等待玩家再点一下空白」的标记 _searchWaitingForClick
+    //         对白完全保留显示在对话框里，给玩家充足阅读时间；
+    //         只有玩家"看完最后一句 → 主动点空白推进"这一下 → 才触发搜证（分支4 node.search 开头命中这个标记）
+    //         这个点空白的动作本身就是 "我看完对白了，继续" 的语义，符合视觉小说通用交互习惯。
+    window._searchWaitingForClick = true;
+    // 不弹 toast、不清对白占位、不设 AutoSearchTimer
+    // → 让完整最后一句对白一直显示，直到玩家确认读完、主动点空白推进
     return;
   }
   return;
@@ -2842,50 +2825,34 @@ function nextLine(){
   }
   const node = SCRIPT[state.nodeId];
   if(node.search){
-    // ✅ 分支4手动推进·前置拦截：还没越过所有台词就强行越过，绝不在对白期间进搜证
-    //   （注意：原来的"推到 currentLines.length-1 最后一行 + 正则匹配提示句设AutoSearchTimer"
-    //         已经被设计级重构为"node.search存在就设AutoSearchTimer"，台词里不再有放大镜提示句，正则残留彻底删除）
+    // ✅ 搜证触发的真正入口：当「玩家看完最后一句对白 → 主动点空白推进」这一次点击时，命中下面的分支
+    //    （标记是在分支1播完最后一句对白时设置的 window._searchWaitingForClick=true）
+    if(window._searchWaitingForClick === true){
+      window._searchWaitingForClick = false;
+      // 🎯 播放统一的搜证提示 toast（复用公共 buildSearchHintToast 函数）
+      toast(buildSearchHintToast(node), 2600);
+      // 把对话框里最后一句对白换成最小占位符（玩家已经确认读完了，没必要再占着对话框）
+      const __dTx = $('dialogueText'); if(__dTx){ __dTx.textContent = '・'; __dTx.classList.add('done'); }
+      const __dSpk = $('speaker'); if(__dSpk){ __dSpk.textContent = ''; __dSpk.className = 'speaker'; }
+      // 立即进搜证（不用再等 1.5s！—— 玩家点空白这一下本身就是"我准备好了"的确认动作）
+      showHotspots(node.search);
+      return;
+    }
+    // ✅ 分支4手动推进·前置拦截：连点空白跳过对白太快时，还没越过最后一句对白 → 强行越过 → 显示对白全文 → 设「等玩家再点一下」标记
     if(lineIdx < currentLines.length){
-      // 强制越过最后一句（lineIdx = currentLines.length）
       lineIdx = currentLines.length;
       clearInterval(typingTimer); typingDone = true;
-      // 先把最后一句正常对白显示出来（避免玩家看不到最后一句就跳到空白占位）
       const last = currentLines[currentLines.length - 1];
       if(last){
         $('dialogueSpeaker').textContent = last.s ? last.s.replace('女主', state.heroine) : '';
         $('dialogueText').textContent = (last.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n');
         $('dialogueText').classList.add('done');
       }
-      // 与分支1口径完全一致：toast + 清空占位 + 设1.5s自动进搜证timer（复用buildSearchHintToast公共函数，toast文案统一）
-      toast(buildSearchHintToast(node), 2600);
-      clearInterval(window.typingTimer); window.typingDone = true; typingDone = true;
-      const __dTx2 = $('dialogueText'); if(__dTx2){ __dTx2.textContent = '・'; __dTx2.classList.add('done'); }
-      const __dSpk2 = $('speaker'); if(__dSpk2){ __dSpk2.textContent = ''; __dSpk2.className = 'speaker'; }
-      clearTimeout(_autoSearchTimer);
-      _autoSearchTimer = setTimeout(function tryShowAfterDone(retryRemain){
-        clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-        retryRemain = typeof retryRemain === 'number' ? retryRemain : 6;
-        if(lineIdx >= currentLines.length && typingDone === true){
-          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-          showHotspots(node.search);
-          return;
-        }
-        if(retryRemain <= 0){
-          clearInterval(typingTimer); typingDone = true;
-          try{
-            const l = currentLines[currentLines.length-1];
-            if(l){ $('dialogueText').textContent = (l.c||'').replace(/\{\{heroine\}\}/g, state.heroine).replace(/<br\s*\/?>/gi, '\n'); $('dialogueText').classList.add('done'); }
-          }catch(e){}
-          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-          showHotspots(node.search);
-          return;
-        }
-        clearTimeout(_autoSearchTimer);
-        _autoSearchTimer = setTimeout(()=>tryShowAfterDone(retryRemain-1), 200);
-      }, 1500);
+      // 越过对白后 → 同样进入"等玩家再点一下才进搜证"的状态
+      window._searchWaitingForClick = true;
       return;
     }
-    // ✅ 手动加速兜底：连点空白时，typeWriter逐字还没写完最后一句对白 → 加速到句末，return不进搜证
+    // ✅ 手动加速兜底：typeWriter 逐字还在播放最后一句对白 → 加速到句末 → 仍然等玩家再点一下
     if(typingDone !== true){
       clearInterval(typingTimer); typingDone = true;
       try{
@@ -2894,9 +2861,9 @@ function nextLine(){
       }catch(e){}
       return;
     }
-    // 玩家主动进搜证：清未到点自动timer → 进
-    clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
-    showHotspots(node.search); return;
+    // 兜底：如果没有进入上面的分支（理论上不会出现，只是防御）→ 仍然等玩家再点一下（而不是直接进搜证）
+    window._searchWaitingForClick = true;
+    return;
   }
   if(node.requireDed){ waitDeduction(node.requireDed, node.next); return; }
   if(node.tl){ openTimeline(()=>playNode(node.next)); return; }
@@ -4921,6 +4888,9 @@ function jumpToBranch(logIdx){
     hideChoices();
     pendingAfterLines = []; pendingThen = null;
     currentLines = []; lineIdx = 0;         // 彻底清空本节点台词缓存（额外保险：防止空窗期内 nextLine 乱播）
+    // ✅ 搜证改"等玩家点一下"的标记 · 回跳收口防御性重置
+    //   回跳前如果玩家在搜证节点处于"等待点击"态 → 回跳后标记清掉，不会"点空白直接进搜证"
+    window._searchWaitingForClick = false;
 
     showScreen('game');
     setStatsUI();
