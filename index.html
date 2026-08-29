@@ -4167,7 +4167,9 @@ function closeBranchFullscreen(){
 }
 function branchZoom(factor){
   branchViewState.scale *= factor;
-  branchViewState.scale = Math.max(0.3, Math.min(3, branchViewState.scale));
+  // ✅ 用户反馈"放到最大也看不清"：maxScale 3 → 6（SVG是矢量，放大6倍文字/连线依然不糊）
+  //    minScale 0.3 → 0.2（可以更"缩"一点看完整全局脉络）
+  branchViewState.scale = Math.max(0.2, Math.min(6, branchViewState.scale));
   applyBranchTransform();
 }
 function branchReset(){
@@ -5257,27 +5259,98 @@ document.addEventListener('DOMContentLoaded', ()=>{
   // 初始化BGM和雨效
   playBgm('cover');
   startRain($('coverRain'));
-  // 初始化分支图拖拽
+  // 初始化分支图拖拽 / 滚轮 / 移动端捏合缩放
   const canvas = document.getElementById('branchCanvas');
   if(canvas){
-    let isDragging = false, startX = 0, startY = 0;
-    canvas.addEventListener('mousedown', (e)=>{
-      isDragging = true; startX = e.clientX; startY = e.clientY;
-    });
-    canvas.addEventListener('mousemove', (e)=>{
+    // ============= PC 端：鼠标拖拽平移（去掉*0.5系数，更跟手）+ 滚轮缩放 =============
+    let isDragging = false, dragStartX = 0, dragStartY = 0, startOffX = 0, startOffY = 0;
+    const onMouseDown = (e)=>{
+      // 点到可点击元素（节点卡片/按钮/弹窗）不启动拖拽（避免覆盖节点点击/按钮onclick）
+      if(e.target.closest('foreignObject, button, .branch-controls, .branch-node-modal')) return;
+      isDragging = true;
+      dragStartX = e.clientX;  dragStartY = e.clientY;
+      startOffX = branchViewState.offsetX;
+      startOffY = branchViewState.offsetY;
+      document.body.style.userSelect = 'none';
+    };
+    const onMouseMove = (e)=>{
       if(!isDragging) return;
-      branchViewState.offsetX += (e.clientX - startX) * 0.5;
-      branchViewState.offsetY += (e.clientY - startY) * 0.5;
-      startX = e.clientX; startY = e.clientY;
+      branchViewState.offsetX = startOffX + (e.clientX - dragStartX);
+      branchViewState.offsetY = startOffY + (e.clientY - dragStartY);
       applyBranchTransform();
-    });
-    canvas.addEventListener('mouseup', ()=> isDragging = false);
-    canvas.addEventListener('mouseleave', ()=> isDragging = false);
+    };
+    const onMouseUp = ()=>{
+      if(!isDragging) return;
+      isDragging = false;
+      document.body.style.userSelect = '';
+    };
+    canvas.addEventListener('mousedown', onMouseDown);
+    // mouseup 绑 window：防止用户从 canvas 按下 → 移出 canvas 松手 → 回到 canvas 内仍误触发拖拽
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    // 滚轮缩放（稍微调灵敏：0.9/1.1 → 0.85/1.2）
     canvas.addEventListener('wheel', (e)=>{
       e.preventDefault();
-      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      const factor = e.deltaY > 0 ? 0.85 : 1.2;
       branchZoom(factor);
     }, { passive: false });
+
+    // ============= 移动端：触摸事件（解决用户反馈"移动端无法拖拽、捏合放大不支持"）============
+    //    单指拖动 = 平移；双指捏合 = 缩放（基于两指距离变化）
+    //    使用 e.preventDefault() + passive:false，避免移动端默认手势/页面滚动干扰
+    let pinchInitDist = 0, pinchInitScale = 1;
+    let tIsDragging = false, tDragStartX = 0, tDragStartY = 0, tStartOffX = 0, tStartOffY = 0;
+    const fingerDist = (touches)=>{
+      if(touches.length < 2) return 0;
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx*dx + dy*dy);
+    };
+    canvas.addEventListener('touchstart', (e)=>{
+      if(e.touches.length === 1){
+        // 单指：启动拖拽（点到可点击元素则跳过）
+        const t = e.touches[0];
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        if(el && el.closest('foreignObject, button, .branch-controls, .branch-node-modal')) return;
+        tIsDragging = true;
+        tDragStartX = t.clientX; tDragStartY = t.clientY;
+        tStartOffX = branchViewState.offsetX; tStartOffY = branchViewState.offsetY;
+      } else if(e.touches.length === 2){
+        // 双指：启动捏合缩放
+        tIsDragging = false;
+        pinchInitDist = fingerDist(e.touches);
+        pinchInitScale = branchViewState.scale;
+      }
+    }, { passive: true });
+    canvas.addEventListener('touchmove', (e)=>{
+      // 🔎 移动端关键：preventDefault 阻止默认"手指拖动=页面滚动/浏览器前进后退手势"
+      e.preventDefault();
+      if(e.touches.length === 1 && tIsDragging){
+        const t = e.touches[0];
+        branchViewState.offsetX = tStartOffX + (t.clientX - tDragStartX);
+        branchViewState.offsetY = tStartOffY + (t.clientY - tDragStartY);
+        applyBranchTransform();
+      } else if(e.touches.length === 2 && pinchInitDist > 0){
+        const curDist = fingerDist(e.touches);
+        // 基于初始距离直接算新scale（不走branchZoom的相对factor，更准），并按新maxScale(6)/minScale(0.2)截断
+        let ns = pinchInitScale * (curDist / pinchInitDist);
+        ns = Math.max(0.2, Math.min(6, ns));
+        branchViewState.scale = ns;
+        applyBranchTransform();
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchend', (e)=>{
+      // 手指离开后重置：如果还剩1指就回到单指拖拽起点（无缝衔接）；如果全离开则停止所有状态
+      if(e.touches.length === 1){
+        const t = e.touches[0];
+        tIsDragging = true;
+        tDragStartX = t.clientX; tDragStartY = t.clientY;
+        tStartOffX = branchViewState.offsetX; tStartOffY = branchViewState.offsetY;
+        pinchInitDist = 0;
+      } else if(e.touches.length === 0){
+        tIsDragging = false; pinchInitDist = 0;
+      }
+    }, { passive: true });
   }
   // 初始化状态
   state = JSON.parse(JSON.stringify(DEFAULT_STATE));
