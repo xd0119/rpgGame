@@ -668,6 +668,8 @@ button{font-family:inherit}
   display:flex;align-items:center;justify-content:center;
 }
 .canvas-tools button:hover{background:#4a89dc;transform:scale(1.1)}
+/* PC 端隐藏移动端专属工具按钮（⛶全屏 / 📋作品介绍）—— 它们本来就在 cover 页面底部和 Cover Info 模块里有 */
+.canvas-tools .mobile-only{ display:none; }
 
 /* 数值栏（左上角悬浮紧凑版） */
 .stats-bar{
@@ -741,13 +743,9 @@ button{font-family:inherit}
 }
 .canvas-panel.show{display:flex;flex-direction:column}
 .cp-inner{max-width:680px;margin:0 auto;width:100%}
-.cp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;position:relative;padding-right:44px}
 .cp-head h3{color:#f5efff;font-size:18px}
-.cp-close{
-  width:32px;height:32px;border-radius:50%;border:1px solid #3d6ba0;
-  background:rgba(255,255,255,.08);color:#e8e6f0;font-size:16px;cursor:pointer;
-}
-.cp-close:hover{background:#e27b7b;color:#fff}
+/* .cp-close 样式已与其他弹窗关闭按钮全局统一（见上方 🔒 统一圆形样式）*/
 .hint{color:#4a89dc;font-size:13px;margin-bottom:12px}
 
 /* 线索卡片网格 */
@@ -888,27 +886,62 @@ button{font-family:inherit}
   display:none;align-items:center;justify-content:center;padding:20px 24px;
 }
 .clue-modal.show{display:flex;animation:fadeIn .3s ease}
-.clue-modal-close{
-  position:absolute;top:12px;right:14px;z-index:3;
-  width:38px;height:38px;border-radius:50%;
-  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);
-  color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:all .18s;
+/* ========================================
+   🔒 所有弹窗右上角 ✕ 关闭按钮 —— 全局统一圆形（半透明黑底+白✕+hover红色旋转）
+   ======================================== */
+.clue-modal-close,
+.ability-close,
+.cm-close,
+.ci-modal-close,
+.ci-char-modal-close,
+.cp-close {
+  position:absolute;
+  top:10px;right:10px;z-index:20;
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.28);
+  color:#fff !important;
+  font-size:17px;font-weight:700;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  padding:0;margin:0;
+  cursor:pointer;
+  font-family:inherit;
+  transition:transform .2s, background .2s, border-color .2s;
   -webkit-tap-highlight-color:transparent;
 }
-.clue-modal-close:hover,.clue-modal-close:active{
-  background:#e27b7b;border-color:#ff9a9a;transform:rotate(90deg);
+.clue-modal-close:hover,   .clue-modal-close:active,
+.ability-close:hover,     .ability-close:active,
+.cm-close:hover,          .cm-close:active,
+.ci-modal-close:hover,    .ci-modal-close:active,
+.ci-char-modal-close:hover, .ci-char-modal-close:active,
+.cp-close:hover,          .cp-close:active {
+  background:#e27b7b !important;
+  border-color:#ff9a9a !important;
+  transform:rotate(90deg);
+  color:#fff !important;
 }
+/* canvas-modal 右上角关闭按钮（通用） */
+/* （已合并到上方统一样式，不再单独定义） */
 .clue-modal-inner{
-  max-width:420px;width:100%;
+  max-width:460px;width:100%;
   background:linear-gradient(160deg,#1a2d47,#142236);
   border:2px solid #4a89dc;border-radius:14px;overflow:hidden;
   box-shadow:0 14px 40px rgba(74,137,220,.35);
 }
-.clue-modal-img{width:100%;max-height:40vh;max-height:320px;object-fit:cover;display:block;border-bottom:1px solid #2a4a7a}
+/* 🖼 线索图片：统一 5:4 比例占位 —— 图片比例不符合就居中裁剪，多余空间填深蓝底
+   （不拉伸变形，视觉统一；比起"留白padding"更好，因为线索图大多方形或横比，不会裁掉关键物证） */
+.clue-modal-img{
+  width:100%;
+  aspect-ratio:5/4;
+  object-fit:cover;
+  object-position:center center;
+  display:block;
+  background:#0d1a2a;           /* 图片未加载/透明处填深蓝，不露出页面背景 */
+  border-bottom:1px solid #2a4a7a;
+}
 .clue-modal-body{padding:16px 18px 18px}
 .clue-modal-body h3{color:#ffd36e;font-size:17px;margin-bottom:8px}
-.clue-modal-body p{color:#c8bde8;font-size:13px;line-height:1.7;margin-bottom:14px}
+.clue-modal-body p{color:#c8bde8;font-size:13px;line-height:1.7;margin-bottom:0}
 .clue-modal-body .pick-tip{color:#7fff7f;font-size:12px;margin-bottom:10px}
 
 /* ============ 画布内通用弹窗（如"推论成功"）——限定在 16:9 画布内居中 ============ */
@@ -927,18 +960,7 @@ button{font-family:inherit}
   box-sizing:border-box;
 }
 .canvas-modal h3{color:#f5efff;margin-bottom:10px;font-size:18px}
-/* canvas-modal 右上角关闭按钮（通用） */
-.cm-close{
-  position:absolute;top:10px;right:12px;z-index:3;
-  width:32px;height:32px;border-radius:50%;
-  background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.22);
-  color:#fff;font-size:15px;font-weight:700;line-height:1;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;padding:0;
-  transition:all .18s;
-  -webkit-tap-highlight-color:transparent;
-}
-.cm-close:hover,.cm-close:active{background:#e27b7b;border-color:#ff9a9a;transform:rotate(90deg)}
+/* canvas-modal 关闭按钮样式已与 .clue-modal-close/.ability-close/.ci-modal-close 全局统一（见上方 🔒统一圆形样式）*/
 /* ============ 文档类线索（CSS 渲染，文字与剧本一致） ============ */
 .clue-modal-doc{
   width:100%;max-height:46vh;overflow:auto;padding:30px 28px 26px;
@@ -968,35 +990,39 @@ button{font-family:inherit}
 .clue-modal-inner{
   position:relative;
   width:min(500px,90%);
-  max-height:min(82vh,560px);   /* 统一最大高度：不超窗口 82% 或 560px */
+  max-height:min(82vh,560px);
   background:linear-gradient(160deg,#1a2d47,#142236);
   border:2px solid #4a89dc;border-radius:14px;overflow:hidden;
   box-shadow:0 14px 40px rgba(74,137,220,.35);
   display:flex;flex-direction:column;
 }
-/* 图片线索区域：小图完整显示，超图限制最大 40% 避免压垮文字 */
+/* 🖼 线索图片：统一 5:4 比例占位（与外层 @line 908 一致）—— object-fit:cover 居中裁剪，空处深蓝兜底 */
 .clue-modal-img{
-  max-height:40%;width:100%;object-fit:contain;background:#0d1a2a;
-  flex-shrink:0;border-bottom:1px solid #2a4a7a;
+  width:100%;
+  aspect-ratio:5/4;
+  object-fit:cover;
+  object-position:center center;
+  background:#0d1a2a;
+  flex:0 0 auto;border-bottom:1px solid #2a4a7a;
+  display:block;
 }
-/* 文档线索区域：固定占 60%，超出则滚 */
+/* 文档线索区域：滚动（文档是多段文字不需要统一比例，保持原样） */
 .clue-modal-doc{
-  flex:1 1 60%;
+  flex:1 1 auto;
   max-height:60%;overflow-y:auto;
   padding:28px 32px 24px;
   font-family:"KaiTi","STKaiti","楷体",serif;color:#2a2418;
   text-align:center;line-height:1.9;
 }
-/* 底部固定按钮区域 */
+/* 底部固定文字区（删除【收起】按钮后，只留名字+描述+已捡取） */
 .clue-modal-body{
   flex:0 0 auto;padding:14px 24px 18px;
   border-top:1px solid #2a4a7a;
   text-align:center;
 }
-.clue-modal-body h3{color:#ffd36e;font-size:17px;margin:4px 0 2px}
-.clue-modal-body p{color:#c8bde8;font-size:13px;line-height:1.7;margin:0 0 12px}
+.clue-modal-body h3{color:#ffd36e;font-size:17px;margin:4px 0 4px}
+.clue-modal-body p{color:#c8bde8;font-size:13px;line-height:1.7;margin:0}
 .clue-modal-body .pick-tip{color:#7fff7f;font-size:12px;margin-bottom:6px}
-.clue-modal-body .btn{margin-top:4px}
 
 /* 统一滚动条样式 */
 ::-webkit-scrollbar{width:8px;height:8px}
@@ -1012,7 +1038,9 @@ button{font-family:inherit}
     width:min(92vw,460px);
     max-height:min(88dvh,calc(100dvh - 30px));
   }
-  .clue-modal-img{max-height:50%}
+  .clue-modal-img{
+    aspect-ratio:5/4;max-height:none;   /* 强制 5:4 比例，不再单独设高度 */
+  }
   .clue-modal-doc{
     flex:1 1 auto;max-height:50%;
     padding:20px 18px 16px;
@@ -1023,7 +1051,7 @@ button{font-family:inherit}
   .clue-modal-doc .doc-body{font-size:13px;text-indent:1em;line-height:1.9;margin-bottom:8px}
   .clue-modal-body{padding:10px 14px 14px}
   .clue-modal-body h3{font-size:15px}
-  .clue-modal-body p{font-size:12px;line-height:1.6;margin-bottom:8px}
+  .clue-modal-body p{font-size:12px;line-height:1.6;margin-bottom:0}
 }
 
 /* ============ 推论结论展示区 ============ */
@@ -1042,6 +1070,25 @@ button{font-family:inherit}
 .ded-result.hint ul{list-style:none;padding:0;margin:6px 0 0}
 .ded-result.hint li{margin:6px 0;color:#e8e6f0;font-size:12.5px;line-height:1.6}
 .ded-result.hint li b{color:#ffd36e}
+
+/* ============ 推论提示弹窗 新排版（左上中标题，避免居中大标题在移动端显得突兀） ============ */
+.ded-hint-title{
+  display:flex;align-items:center;gap:8px;
+  justify-content:flex-start;  /* 左对齐——用户要求：左上角一行中标题 */
+  margin: -2px 0 14px;
+}
+.ded-hint-title .ded-hint-icon{
+  font-size:22px;line-height:1;
+}
+.ded-hint-title h3{
+  color:#ffd36e;
+  font-size:17px;
+  margin:0;letter-spacing:1px;font-weight:700;
+}
+#dedHintBody h5{font-size:13px;margin:10px 0 6px;color:#8ac0ff}
+#dedHintBody .auto-lock,#dedHintBody .need-clues{margin:10px 0 4px;padding-left:2px;color:#bfb1ea;font-weight:700;font-size:13px}
+#dedHintBody li{font-size:12.5px;line-height:1.7;color:#e8e6f0;margin:4px 0}
+#dedHintBody li b{color:#ffd36e}
 
 /* ============ 全屏剧情脉络图（XMind 风格） ============ */
 .branch-fullscreen{
@@ -1206,6 +1253,7 @@ button{font-family:inherit}
   .stats-bar{flex-wrap:wrap;gap:4px;font-size:12px}
   .clue-list{grid-template-columns:1fr}
   .canvas-tools button{width:34px;height:34px;font-size:14px}
+  .canvas-tools .mobile-only{ display:flex; }   /* 手机端：显示 ⛶ 和 📋 */
 
   /* ====== 手机端：横屏游戏铺满 + 作品介绍收进浮动按钮 ====== */
   .game-screen{padding:0;background:#0d0f1a}
@@ -1343,7 +1391,7 @@ button{font-family:inherit}
 /* 典藏版小卡：blingbling 闪光边框 + 镭射背景 + 旋转光泽 */
 .ability-card{
   position:relative;width:100%;aspect-ratio:3/4;
-  max-width:420px;
+  max-width:300px;        /* 恢复 PC 端原大小（移动端单独在 @media 放大）*/
   border-radius:16px;padding:4px;
   background:linear-gradient(135deg,#ffd36e 0%,#ff8fb2 25%,#8be9fd 50%,#c792ea 75%,#a6e22e 100%);
   background-size:300% 300%;
@@ -1385,6 +1433,19 @@ button{font-family:inherit}
   position:absolute;left:0;right:0;bottom:0;z-index:3;
   padding:14px 12px 10px;text-align:center;
   background:linear-gradient(transparent,rgba(0,0,0,.85));
+}
+/* 🔻 称号【不适合做侦探的人】：女主卡片灰度淡化 + 半透明灰色遮罩 + 取消闪光特效 */
+.ability-card.bad-detective .ability-portrait{ filter: grayscale(100%) brightness(0.6) contrast(0.85); }
+.ability-card.bad-detective .ability-card-inner{ background:#23232c; }
+.ability-card.bad-detective .ability-card-inner::after{
+  content: '';
+  background: linear-gradient(150deg, rgba(80,80,92,0.55), rgba(30,30,38,0.82));
+  animation: none;
+  mix-blend-mode: multiply;
+}
+.ability-card.bad-detective .ability-card-inner::before{
+  animation: none;
+  opacity: 0;
 }
 .ability-name{
   font-size:18px;color:#ffd36e;letter-spacing:2px;font-weight:700;
@@ -1493,7 +1554,7 @@ button{font-family:inherit}
     display:flex;flex-direction:column;align-items:center;gap:8px;
   }
   .ability-card{
-    width:min(22vw,130px);aspect-ratio:3/4;
+    width:min(38vw,240px);aspect-ratio:3/4;   /* 移动端单独放大：从 130→240px，不浪费空间 */
     border-radius:12px;padding:3px;
   }
   .ability-card-inner{border-radius:10px}
@@ -1576,6 +1637,16 @@ button{font-family:inherit}
   .ci-char-modal-close{position:absolute;top:8px;right:8px;z-index:4}
   .ci-modal-close{    position:absolute;top:10px;right:10px;z-index:3}
   .cp-close{          position:absolute;top:8px;right:8px;z-index:4}
+
+  /* ============ 推论提示弹窗（手机端：整体缩放到正常文字比例，避免过大） ============ */
+  .ded-hint-modal{ padding: 16px 14px !important; }
+  .ded-hint-title .ded-hint-icon{ font-size:18px; }
+  .ded-hint-title h3{ font-size:14px; letter-spacing:.5px; }
+  #dedHintBody{ padding: 10px 11px !important; max-height: 220px !important; }
+  #dedHintBody h5{ font-size:11.5px !important; margin: 8px 0 4px !important; }
+  #dedHintBody .auto-lock,
+  #dedHintBody .need-clues{ font-size:11.5px !important; }
+  #dedHintBody li{ font-size: 10.5px !important; line-height: 1.55 !important; margin: 3px 0 !important; }
 }
 </style>
 </head>
@@ -1650,7 +1721,7 @@ button{font-family:inherit}
 <!-- ============ 角色详情弹窗（点击角色Tab卡片时打开：大图 + 名字 + 梗概） ============ -->
 <div id="ciCharModal" class="ci-char-modal" role="dialog" aria-modal="true" aria-hidden="true">
   <div class="ci-char-modal-card">
-    <button class="ci-char-modal-close" id="ciCharModalClose" aria-label="关闭">✕</button>
+    <button class="ci-char-modal-close cm-close" id="ciCharModalClose" aria-label="关闭">✕</button>
     <div class="ci-char-modal-imgbox">
       <img id="ciCharModalImg" src="" alt="">
     </div>
@@ -1722,6 +1793,9 @@ button{font-family:inherit}
         <div class="choices" id="choices"></div>
 
         <div class="canvas-tools">
+          <!-- 仅移动端显示：全屏（手机需收起浏览器地址栏）+ 作品介绍（手机不会有页面下方的"关于/角色/结局"板块） -->
+          <button class="mobile-only" title="全屏" onclick="toggleFullscreen()">⛶</button>
+          <button class="mobile-only" title="作品介绍" onclick="toggleCiModal()">📋</button>
           <button title="背包" onclick="openInventory()">🎒</button>
           <button title="推论" onclick="openDeduction()">🧩</button>
           <button title="数值面板" onclick="toggleStats()">📊</button>
@@ -1817,7 +1891,6 @@ button{font-family:inherit}
               <div class="pick-tip" id="clueModalTip">✓ 已收入背包</div>
               <h3 id="clueModalName"></h3>
               <p id="clueModalDesc"></p>
-              <button class="btn primary" onclick="closeMask('clueModal')">收起</button>
             </div>
           </div>
         </div>
@@ -1842,10 +1915,13 @@ button{font-family:inherit}
 
         <!-- 推论失败提示弹窗（失败6次后点击「查看提示」弹出） -->
         <div class="canvas-modal-mask" id="dedHintModal" onclick="if(event.target.id==='dedHintModal')closeMask('dedHintModal')">
-          <div class="canvas-modal" style="max-width:520px">
+          <div class="canvas-modal ded-hint-modal" style="max-width:520px">
             <button class="cm-close" onclick="closeMask('dedHintModal')">✕</button>
-            <div style="font-size:34px;margin-bottom:6px">💡</div>
-            <h3 style="color:#ffd36e;font-size:20px;margin-bottom:10px">推论提示</h3>
+            <!-- 标题：改为左上一行中标题（移动端更紧凑）-->
+            <div class="ded-hint-title">
+              <span class="ded-hint-icon">💡</span>
+              <h3>推论提示</h3>
+            </div>
             <div id="dedHintBody" style="padding:12px 14px;background:rgba(74,137,220,.1);border-radius:10px;border:1px solid #2a4a7a;margin-bottom:12px;text-align:left;max-height:280px;overflow:auto"></div>
           </div>
         </div>
@@ -1922,10 +1998,7 @@ button{font-family:inherit}
   </div>
 </div>
 
-<!-- 手机端浮动按钮：📋 打开作品介绍 -->
-<button class="ci-fab" id="ciFab" aria-label="作品介绍" onclick="toggleCiModal()">📋</button>
-<!-- 手机端全屏按钮 -->
-<button class="ci-fab-fs" id="ciFabFs" aria-label="全屏" onclick="toggleFullscreen()">⛶</button>
+<!-- 浮动按钮已移除：📋作品介绍 + ⛶全屏，现在位于 画布右上角 canvas-tools 4 按钮的最前面（进入游戏后显示）-->
 
 <!-- 手机端作品介绍弹窗（内容从 cover-info 克隆） -->
 <div class="ci-modal" id="ciModal" aria-hidden="true">
@@ -2079,20 +2152,19 @@ function isExplored(nodeId){
 let state = {
   heroine: '林小鹿',
   nodeId: 'start',
-  // 6 项能力：推理力 lu / 共情力 shen / 洞察力 ded / 观察力 obs / 直觉 int / 勇气 cou
-  // 前 3 项为剧本主线数值，后 3 项可在剧本 eff 中通过 obs/int/cou 字段中途触发提升
   stats: { lu:0, shen:0, ded:0, obs:0, int:0, cou:0 },
   statLog: { lu:[], shen:[], ded:[], obs:[], int:[], cou:[] },
   clues: [],
   deduced: [],
   flags: {},
   dedFailCount: 0,
-  giveUpCount: 0, // 放弃推理累计次数，>=3 触发结局5
+  giveUpCount: 0,
   // 分支脉络追踪
-  branchLog: [], // [{nodeId, choiceText, resultNode, effect, snapshot}]
-  branchSnapshots: {}, // {nodeId: state_snapshot}
-  // 盘问记录（用于二次盘问环节判断玩家问过什么）
+  branchLog: [],
+  branchSnapshots: {},
   questionLog: [],
+  // 是否已通关过至少一个结局（影响脉络跳转的提示模式）
+  everEnding: !!localStorage.getItem('rpgGame_everEnding'),
 };
 
 /* =========================================================
@@ -2278,6 +2350,9 @@ function abilityMax(){
 function renderAbilityHex(){
   const svg = $('abilityHex');
   if(!svg) return;
+  // 先重置卡片遮罩：【不适合做侦探的人】才会加 bad-detective，其他场景一律清除
+  const abilityCard = document.querySelector('.ability-card');
+  if(abilityCard) abilityCard.classList.remove('bad-detective');
   const R = 100; // 雷达图半径
   const max = abilityMax();
   const n = ABILITY_DEFS.length;
@@ -2349,6 +2424,9 @@ function renderAbilityHex(){
     // ===== 结局5 最高优先级：累计放弃≥3次，强制称号（覆盖所有其他分数）=====
     if(state.flags?.endByGiveUp || (state.giveUpCount||0) >= 3){
       titles.push({n:'不适合做侦探的人', c:'#ff5050', t:`你在推理关头临阵退缩累计三次。今后你不会再获得任何案件的进入权限。——推理社的大门，不对选择逃避的人敞开。`});
+      // 🔻 触发专属卡片遮罩：灰度淡化 + 取消闪光，与称号绝望氛围呼应
+      const ac = document.querySelector('.ability-card');
+      if(ac) ac.classList.add('bad-detective');
       titlesEl.innerHTML = titles.map(t => `
         <div class="ability-title-item">
           <span class="ability-title-name" style="color:${t.c}">【${t.n}】</span>
@@ -2435,6 +2513,13 @@ function stopBgm(){
    立绘系统
    ========================================================= */
 function showPortrait(type){
+  // ===== 方案2a：立绘渲染前自保级兜底 =====
+  //   只要代码有"显示立绘"的意图，就必须保证对话框可见 + 退出搜证态
+  //   （防止"立绘显示着、对话框被之前的搜证hide了"的不可能状态出现——即使回跳收口漏清也能自动纠正）
+  $('gameInner').classList.remove('search-mode');
+  const dbx = $('dialogueBox');
+  if(dbx){ dbx.classList.remove('search-hidden'); dbx.style.display = ''; }
+  showDialogueBox();
   const c = CHARACTERS[type];
   if(!c) { hidePortrait(); return; }
   // 切单人时隐藏群像层
@@ -2452,6 +2537,11 @@ function hidePortrait(){
 }
 // 群像：多人立绘并排登场。types 为角色 key 数组，active 可选高亮某个
 function showGroupPortrait(types, active){
+  // ===== 方案2a：群像立绘渲染前自保级兜底（同 showPortrait）=====
+  $('gameInner').classList.remove('search-mode');
+  const dbx2 = $('dialogueBox');
+  if(dbx2){ dbx2.classList.remove('search-hidden'); dbx2.style.display = ''; }
+  showDialogueBox();
   // 切换到群像时必须先隐藏单人立绘，避免两者叠加出现多余人物
   hidePortrait();
   const box = $('charGroup');
@@ -2602,12 +2692,33 @@ function hideStatDetail(){
    ========================================================= */
 let typingTimer = null, typingDone = false, currentLines = [], lineIdx = 0;
 let pendingAfterLines = [], pendingThen = null;  // 选项后追加"嫌疑人回答"用
+let _autoSearchTimer = null;  // 🔎 搜证节点"自动进入放大镜"的 setTimeout：跨函数共享，切换节点/手动进搜证时必须清掉，防止遗留 timer 在后期乱入
 
 async function playNode(nodeId){
   state.nodeId = nodeId;
   markExplored(nodeId);
   const node = SCRIPT[nodeId];
   if(!node){ toast('剧本节点丢失：' + nodeId); return; }
+
+  // ⚠️ 跨节点防御性清理：防止遗留的定时器 / 追加台词 污染下一节点
+  clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+  pendingAfterLines = []; pendingThen = null;
+
+  // 📸【快照】立刻拍下进入此节点时的【数值与标记】（剧情脉络回跳用，线索/推论/盘问不在里面）
+  //    只在第一次进入该节点（或没快照时）拍，避免后续重选选项覆盖最初值
+  if(!state.branchSnapshots[nodeId]){
+    try{
+      state.branchSnapshots[nodeId] = JSON.parse(JSON.stringify({
+        stats: state.stats, statLog: state.statLog,
+        flags: state.flags,
+        dedFailCount: state.dedFailCount,
+        giveUpCount: state.giveUpCount,
+        _triggeredNode3: state._triggeredNode3 || false,
+        _triggeredNode7: state._triggeredNode7 || false,
+        _clueIds: state.clues || []   // 🔍 记录快照时已收集的线索id列表（用于回跳后计算"快照后新增线索"对应的观察力，避免obs回退）
+      }));
+    }catch(e){}
+  }
 
   if(node.bgm) playBgm(node.bgm);
   if(node.end){ showEnding(node.end); return; }
@@ -2617,19 +2728,23 @@ async function playNode(nodeId){
     if(cc) cc.classList.remove('show');
   } catch(e){}
 
+  // ⚠️ 必须在 await setBg 之前清台！避免上节点最后一句（如Q1"知无不言"）在背景解码期间残留
+  clearHotspots();
+  hideChoices();
+  hidePortrait();
+  clearDialogue();
+  // 🔥 不要在这预判 hideDialogueBox！
+  //   之前错误逻辑：if(node.search) hideDialogueBox()
+  //   —— 搜证节点（node3/node4/node7/ext）的前几行是正常剧情（女主、社长、旁白）
+  //      还没到 showHotspots 就 hide 了，会导致"立绘显示+没有聊天框"的bug（截图1正是这个）
+  //   正确时机：只在 showHotspots() 真正启动放大镜模式那一瞬间才 hideDialogueBox
+  showDialogueBox();
+
   if(node.bg) await setBg(node.bg);
   else await Promise.resolve();
 
   if(node.effect) applyEffect(node.effect);
   else stopRain();
-
-  clearHotspots();
-  hideChoices();
-  hidePortrait();
-  // 🔒 切换节点时必须清台（尤其是选项→下一个节点的过渡，
-  //   否则上一节点最后一句会短暂闪现 —— 比如 Q1 "知无不言"跳 node4）
-  clearDialogue();
-  showDialogueBox();
 
   currentLines = node.lines || [];
   lineIdx = 0;
@@ -2642,8 +2757,36 @@ async function playNode(nodeId){
 function nextLine(){
   // 1. 本节点原始台词
   if(lineIdx < currentLines.length){
-    showLine(currentLines[lineIdx]);
+    const isLastLine = lineIdx === currentLines.length - 1;  // ← 最后一行？
+    const line = currentLines[lineIdx];
+    showLine(line);
     lineIdx++;
+
+    // ⚠️ 如果是最后一行 + 该节点是搜证节点 + 最后一句包含"搜证模式开启"关键字
+    //   （这句就是"找线索的提示"），玩家通常以为点了就直接进搜证。
+    //   之前是必须再点一次 nextLine() 才真正 showHotspots，造成"点一下又回到对话"的误判感
+    //   现在：播完提示+延迟1500ms → 自动 showHotspots，不再等玩家点
+    const node = SCRIPT[state.nodeId];
+    if(isLastLine && node && node.search){
+      const raw = (line.c || '') + (line.t || '');   // 合并 c 与 t
+      if(/搜证模式|放大镜搜证|点击发光的线索|搜集线索|找出.*线索|找到.*物证|开启放大镜|搜证完成/g.test(raw)){
+        // 🔥 不要在这里 hideDialogueBox！
+        //   之前错误写法：立即 hideDialogueBox() → 打字机还在播放提示句 + 1500ms阅读期
+        //      这段时间"对话框已消失 + 搜证热点还没出现" → 空白卡死感 + 立绘残留
+        //   正确时机：让提示句完整显示给玩家读，只在 setTimeout 触发 showHotspots 的瞬间
+        //      由 showHotspots() 内部统一 hideDialogueBox + hidePortrait + 加 search-mode
+        // 估算 typeWriter 写完时间 + 给玩家阅读 1500ms，然后自动开搜证
+        const estTypeMs = Math.min(1800, (String(raw).length * 30) + 120);
+        // 🔎 自动进搜证的timer用全局变量保存，避免"玩家手动点击进搜证 / 切节点 / 搜完继续"之后 timer 还残留触发
+        clearTimeout(_autoSearchTimer);
+        _autoSearchTimer = setTimeout(()=>{
+          clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+          // 如果玩家在等待期间主动点了一下触发了 nextLine，就不会再到这里（lineIdx > len 会 fail）
+          if(lineIdx >= currentLines.length) showHotspots(node.search);
+        }, estTypeMs + 1500);
+        return; // 不等玩家继续点
+      }
+    }
     return;
   }
   // 2. 选项后追加的"嫌疑人回答"（一定要玩家点击后才推进）
@@ -2659,7 +2802,11 @@ function nextLine(){
     return;
   }
   const node = SCRIPT[state.nodeId];
-  if(node.search){ showHotspots(node.search); return; }
+  if(node.search){
+    // 🔎 玩家主动推进进搜证：清掉还没到点的自动进搜证 timer，避免触发两次 showHotspots 造成立绘/台词错乱
+    clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+    showHotspots(node.search); return;
+  }
   if(node.requireDed){ waitDeduction(node.requireDed, node.next); return; }
   if(node.tl){ openTimeline(()=>playNode(node.next)); return; }
   if(node.choices){ showChoices(node.choices); return; }
@@ -2779,6 +2926,12 @@ function setBg(file){
 
 $('gameInner').addEventListener('click', e=>{
   if(e.target.closest('.hotspot,.choices,.choice-btn,.canvas-tools,.stats-bar,.canvas-panel,.clue-item,.slot,.btn')) return;
+  // 🔒 强制选择：选项面板正在显示时，点空白不允许跳过推进，必须做出选择
+  const choicesEl = $('choices');
+  if(choicesEl && choicesEl.classList.contains('show')){
+    toast('👆 请先做出选择再继续', 1800);
+    return;
+  }
   // 关键 toast (sticky)：玩家点画布空白也能关闭，确保一定要主动点掉
   const toastEl = $('toast');
   if(toastEl.classList.contains('sticky') && toastEl.classList.contains('show')){
@@ -2802,22 +2955,19 @@ $('gameInner').addEventListener('click', e=>{
    选项
    ========================================================= */
 function showChoices(choices){
+  // ===== 方案2b：选项面板渲染前自保级兜底 =====
+  //   只要要打开选项面板（通常是盘问/选择），就必须退出搜证态 + 保证对话框可见
+  //   防止"面板打开了、立绘也显示了、对话框却被hide了"的不一致状态
+  $('gameInner').classList.remove('search-mode');
+  const __chDbx = $('dialogueBox');
+  if(__chDbx){ __chDbx.classList.remove('search-hidden'); __chDbx.style.display = ''; }
+  showDialogueBox();
   const c = $('choices');
   c.innerHTML = '';
   // 选项出现时切换左右分栏布局：立绘在左，选项在右，避免遮挡
   $('gameInner').classList.add('choices-open');
   c.classList.add('show');
-  // 保存当前节点的快照（用于脉络图回跳）：含支线触发标记与盘问记录，避免回跳后支线台词永久丢失
-  const snapshot = JSON.parse(JSON.stringify({
-    stats: state.stats, statLog: state.statLog,
-    clues: state.clues, deduced: state.deduced, flags: state.flags,
-    dedFailCount: state.dedFailCount,
-    giveUpCount: state.giveUpCount,
-    questionLog: state.questionLog || [],
-    _triggeredNode3: state._triggeredNode3 || false,
-    _triggeredNode7: state._triggeredNode7 || false
-  }));
-  state.branchSnapshots[state.nodeId] = snapshot;
+  // （快照已在 playNode 入口拍好，线索/推论/盘问永不在快照里重置，此处仅保留群像立绘解锁判定逻辑）
   // ===== 指认嫌疑人特殊渲染：群像立绘 + 解锁状态视觉指引 =====
   const DED_TO_SUSPECT = { d7_evidence_all:'zhou', d6_motive_lin:'lin', d4_motive_chen:'chen', d5_motive_xu:'xu' };
   const isAccuseScene = state.nodeId === 'node11' && choices.some(ch => ch.needDed && ch.needDed.some(d => DED_TO_SUSPECT[d]));
@@ -2839,6 +2989,15 @@ function showChoices(choices){
     hint.className = 'accuse-hint';
     hint.innerHTML = `💡 推理越多，可指认的嫌疑人越多。已解锁 <b>${unlockedCount}/4</b>。`;
     c.appendChild(hint);
+  }
+  // ===== 最后盘问场景（node9b）：4 嫌疑人同框立绘登场，供玩家选择追问对象 =====
+  if(state.nodeId === 'node9b'){
+    showGroupPortrait(['chen','lin','zhou','xu'], null); // 4 人并排，不高亮任何人
+  }
+  // ===== 追问子节点（node9b_chen / lin / zhou / xu）：显示被追问者的单人立绘 =====
+  if(state.nodeId && state.nodeId.startsWith('node9b_')){
+    const key = state.nodeId.replace('node9b_',''); // chen/lin/zhou/xu
+    if(key && CHARACTERS[key]) showPortrait(key);
   }
   // 手动推论 = 排除 d7（自动解锁），其余 7 条；用于 node10 时间线入口的推论完成度过滤
   const MANUAL_DEDS = DEDUCTIONS.filter(d => !d.need.includes('__AUTO__')).map(d => d.id);
@@ -2926,13 +3085,31 @@ function showChoices(choices){
       _lastChoiceSummary = choiceSummary;
       if(ch.eff) applyEff(ch.eff, choiceSummary);
       hideChoices();
+      // ⚠️ 清掉当前对话框里的"最后一句台词（如Q1'知无不言'）"
+      //   避免 hint 还在 typeWriter 初始化的那几毫秒，旧台词和新hint的说话人（陈老板/林作者…）恰好一致
+      //   造成"那句话又出现了一次"的误判感：先清空 → 空对话框 → typeWriter逐字出hint 干净过渡
+      clearDialogue();
       // 盘问等带 hint 的选项：对方回应必须进入对话框里播放（强制玩家点击再推进，不会自动消失）
       if(ch.hint){
-        // 推断 speaker：优先 choice.hintSpeaker，再从节点 id 猜（Q1=陈/Q2=林/Q3=周/Q4=许），否则"旁白"
+        // 推断 speaker：优先 choice.hintSpeaker → 节点id → qLog前缀（reQ） → 角色名关键词兜底
+        //   （node9b最后盘问：reQ1=陈/reQ2=林/reQ3=周/reQ4=许；hint文本开头即角色名）
         let spkKey = ch.hintSpeaker;
         if(!spkKey){
           const nid = state.nodeId;
           spkKey = nid==='Q1'?'chen':nid==='Q2'?'lin':nid==='Q3'?'zhou':nid==='Q4'?'xu':null;
+        }
+        if(!spkKey && ch.qLog){
+          spkKey = ch.qLog==='reQ1'?'chen':ch.qLog==='reQ2'?'lin':ch.qLog==='reQ3'?'zhou':ch.qLog==='reQ4'?'xu':null;
+        }
+        if(!spkKey && typeof ch.hint==='string'){
+          // 兜底：从 hint 文本开头的角色名猜（兼容所有未显式配置的节点场景）
+          if(/^陈老板/.test(ch.hint)) spkKey='chen';
+          else if(/^林作者/.test(ch.hint)) spkKey='lin';
+          else if(/^周编辑/.test(ch.hint)) spkKey='zhou';
+          else if(/^许管家/.test(ch.hint)) spkKey='xu';
+          else if(/^陆社长/.test(ch.hint)) spkKey='lu';
+          else if(/^沈同学/.test(ch.hint)) spkKey='shen';
+          else if(/^女主/.test(ch.hint)) spkKey='hero';
         }
         const spk = spkKey && CHARACTERS[spkKey] ? CHARACTERS[spkKey] : null;
         const extraLine = {
@@ -3019,6 +3196,8 @@ function clearHotspots(){
   closeSearchContinueBar();
 }
 function showHotspots(cfg){
+  hidePortrait();      // 🔎 搜证模式：清掉立绘（避免"立绘残留+无对话框"的怪状态，以及遮挡线索）
+  hideGroupPortrait(); // 顺便清群像层
   $('gameInner').classList.add('search-mode'); // 鼠标切放大镜
   hideDialogueBox();   // 🔎 搜证模式：隐藏底部对话框，聚焦背景
   hideChoices();
@@ -3057,14 +3236,24 @@ function showHotspots(cfg){
         showClueDetail(h.id, false); // 已拾取的再次点击可查看
       }
       const allGot = cfg.require.every(id => state.clues.includes(id));
-      if(allGot && !already){
-        toast(cfg.msg + '（线索已集齐，请拾取完毕后点击「继续」推进剧情）', 3200);
+      if(allGot){
+        // newly picked 才 toast 集齐；老线索就不必重复提示
+        if(!already) toast(cfg.msg + '（线索已集齐，请拾取完毕后点击「继续」推进剧情）', 3200);
         showSearchContinueBar();
       }
     };
     wrap.appendChild(d);
   });
-  toast('🔎 放大镜已开启：点击场景中发光的线索拾取', 2200);
+
+  // ✅ 渲染完所有热点后，立刻检查一次 require 是否已全部在 state.clues 里
+  //    （典型场景：脉络回跳，线索之前已全部收集过，玩家不会再点热点 → 如果不查就会卡关）
+  const allGotNow = cfg.require.every(id => state.clues.includes(id));
+  if(allGotNow){
+    toast('📋 线索已全部收集齐，点右下角「▶ 继续剧情」推进', 3000);
+    showSearchContinueBar();
+  } else {
+    toast('🔎 放大镜已开启：点击场景中发光的线索拾取', 2200);
+  }
 }
 // 搜证完成后显示"继续"按钮，由玩家点击推进剧情（不自动跳转）
 function showSearchContinueBar(){
@@ -3082,6 +3271,13 @@ function closeSearchContinueBar(){
   if(bar) bar.remove();
 }
 function advanceAfterSearch(){
+  // ⚠️ 搜证结束第一件事：清理所有"搜证模式遗留"的状态，防止污染后续剧情 / 支线台词
+  //   1) 自动进搜证的timer（还没到点会在剧情播到一半突然乱开放大镜）
+  clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+  //   2) 上节点遗留的"追加台词缓存"（搜证前的hint不会有，但防御性清空防串台）
+  pendingAfterLines = []; pendingThen = null;
+  //   3) 立绘（即使showHotspots.hidePortrait已经清了，也防御一次——避免搜证期间立绘被其他函数偷偷加上）
+  hidePortrait(); hideGroupPortrait();
   closeSearchContinueBar();
   closeMask('clueModal');
   closeMask('invPanel');
@@ -3666,12 +3862,14 @@ function showEnding(id){
     gal.push(id);
     localStorage.setItem(GALLERY_KEY, JSON.stringify(gal));
   }
+  // 🎖 标记"已通关过至少一个结局"（剧情脉络跳转的提示模式会用到，持久化避免清存档丢失）
+  localStorage.setItem('rpgGame_everEnding', '1');
+  state.everEnding = true;
   $('endTag').textContent = e.tag;
   $('endTitle').textContent = e.title;
   $('endText').textContent = e.desc;
   stopRain(); doGlow();
   $('endingMask').classList.add('show');
-  // 通关后删除存档，并隐藏"继续游戏"按钮
   localStorage.removeItem(SAVE_KEY);
   const resumeBtn = document.querySelector('.cc-menu .btn.primary');
   if(resumeBtn){ resumeBtn.style.display = 'none'; }
@@ -4455,39 +4653,120 @@ function toggleUnvisited(checked){
 function jumpToBranch(logIdx){
   const item = state.branchLog[logIdx];
   if(!item) return;
-  const snapshot = state.branchSnapshots[item.nodeId];
+  const nodeId = item.nodeId;
+  const snapshot = state.branchSnapshots[nodeId];
   if(!snapshot){
-    toast('该节点无快照，无法回跳');
-    return;
+    // 老存档（playNode时还没拍快照）就直接用当前数值（不重置线索/推论/盘问）
   }
-  state.stats = {...snapshot.stats};
-  state.statLog = JSON.parse(JSON.stringify(snapshot.statLog));
-  state.clues = [...snapshot.clues];
-  state.deduced = [...snapshot.deduced];
-  state.flags = {...snapshot.flags};
-  state.dedFailCount = snapshot.dedFailCount || 0;
-  state.giveUpCount = snapshot.giveUpCount || 0;
-  state.questionLog = [...(snapshot.questionLog || [])];
-  state._triggeredNode3 = snapshot._triggeredNode3 || false;
-  state._triggeredNode7 = snapshot._triggeredNode7 || false;
-  state.nodeId = item.nodeId;
-  state.currentLogIdx = logIdx;
-  // 不再截断branchLog，保留完整历史
-  closeNodeModal();
-  closeBranchFullscreen();
-  closeMask('dedPanel');
-  closeMask('invPanel');
-  closeMask('tlPanel');
-  closeMask('clueModal');
-  // 直接隐藏能力图鉴并重置来源标记，避免调用 closeAbilityChart 触发 backToMenu 副作用
-  const abOv = $('abilityOverlay');
-  if(abOv) abOv.style.display = 'none';
-  abilityFromEnding = false;
-  clearHotspots();
-  showScreen('game');
-  setStatsUI();
-  toast(`🔄 回跳到「${SCENE_NAMES[item.nodeId]||item.nodeId}」，重新选择选项`, 3000);
-  setTimeout(()=>playNode(item.nodeId), 800);
+  const sceneName = SCENE_NAMES[nodeId] || nodeId;
+  const previewMode = state.everEnding || localStorage.getItem('rpgGame_everEnding');
+
+  // === 自定义确认弹窗：根据模式显示不同文案 ===
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px';
+  const modeTitle = previewMode ? '📖 跳跃预览模式' : '🔄 时空倒流模式';
+  const modeTip = previewMode
+    ? `你已通关 1+ 个结局，当前是<span style="color:#ffd36e">自由预览</span>：<br>线索/推论/盘问均已保留，跳到此节点可自由查看。`
+    : `尚未通关结局，当前是<span style="color:#ffd36e">时空倒流重走</span>：<br>已收集的线索、推论、盘问会永久保留，不用重捡。`;
+  modal.innerHTML = `
+    <div style="max-width:380px;width:100%;background:linear-gradient(160deg,#1a2d47,#142236);border:2px solid #4a89dc;border-radius:14px;padding:20px 22px 18px;box-shadow:0 14px 40px rgba(74,137,220,.35);color:#e8e6f0;font-size:14px;line-height:1.75">
+      <div style="font-size:19px;color:#ffd36e;font-weight:700;text-align:center;margin-bottom:10px">${modeTitle}</div>
+      <div style="background:rgba(74,137,220,.12);border:1px solid #2a4a7a;border-radius:10px;padding:12px 14px;margin-bottom:12px">
+        <div style="margin-bottom:8px">跳回「<b style="color:#8ac0ff">${sceneName}</b>」：</div>
+        <div style="margin:2px 0">📋 线索 / 推论 / 盘问：<b style="color:#7fff7f">保留</b>，不用重捡</div>
+        <div style="margin:2px 0">📊 能力数值：<b style="color:#ffd36e">重置为进入该节点时的值</b>（拾取线索对应的观察力保留不回退，重选选项导致其他数值变化）</div>
+      </div>
+      <div style="color:#c8bde8;margin-bottom:14px">${modeTip}确定要跳转吗？</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button id="jmCancel" class="btn" style="padding:9px 18px">取消</button>
+        <button id="jmOk" class="btn primary" style="padding:9px 18px">确定${previewMode ? '跳转' : '回跳'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  modal.querySelector('#jmCancel').onclick = ()=>{ document.body.removeChild(modal); };
+  modal.querySelector('#jmOk').onclick = ()=>{
+    document.body.removeChild(modal);
+    doApplyJump();
+  };
+
+  function doApplyJump(){
+    // === 按新规则重置：只重置 stats/flags 相关，线索/推论/盘问 永不重置 ===
+    if(snapshot){
+      state.stats = {...snapshot.stats};
+      state.statLog = JSON.parse(JSON.stringify(snapshot.statLog));
+      state.flags = {...snapshot.flags};
+      state.dedFailCount = snapshot.dedFailCount || 0;
+      state.giveUpCount = snapshot.giveUpCount || 0;
+      state._triggeredNode3 = snapshot._triggeredNode3 || false;
+      state._triggeredNode7 = snapshot._triggeredNode7 || false;
+      // 🔍 观察力不回退：线索已保留无需重捡 → 快照后新拾取的线索对应的 0.5/条 必须补回
+      //    （obs的其他来源：选项eff.obs 会从snapshot.stats.obs正常恢复，这里只补"快照后捡线索"多出来的那部分）
+      const snapClues = Array.isArray(snapshot._clueIds) ? snapshot._clueIds : [];
+      const pickedAfter = (state.clues||[]).filter(id => !snapClues.includes(id));
+      if(pickedAfter.length > 0){
+        const extra = pickedAfter.length * 0.5;
+        state.stats.obs = (state.stats.obs || 0) + extra;
+        if(!state.statLog.obs) state.statLog.obs = [];
+        pickedAfter.forEach((cid, i)=>{
+          const meta = typeof CLUES !== 'undefined' && CLUES[cid] ? CLUES[cid].n || cid : cid;
+          state.statLog.obs.push({
+            reason: `脉络回溯保留·拾取线索·${meta}`,
+            amount: 0.5,
+            time: Date.now() + i
+          });
+        });
+      }
+    }
+    // 线索 state.clues / 推论 state.deduced / 盘问 state.questionLog → 不动
+    state.nodeId = nodeId;
+    state.currentLogIdx = logIdx;
+
+    // ============================================================
+    // 方案1（回跳唯一收口·全UI临时态归零）：
+    //   经验1583130：跳转/回跳链路必须把"UI临时态"统一收敛到 OK/FAIL 收口函数里，
+    //   不能散落在各处（之前只清 clearHotspots，造成立绘/对话框/搜索类/打字机全部残留）
+    // ============================================================
+    closeNodeModal();
+    closeBranchFullscreen();
+    closeMask('dedPanel');
+    closeMask('invPanel');
+    closeMask('tlPanel');
+    closeMask('clueModal');
+    const abOv = $('abilityOverlay');
+    if(abOv) abOv.style.display = 'none';
+    abilityFromEnding = false;
+    clearHotspots();
+    // ① 立绘：立即清除（避免800ms空窗期"立绘残留+对话框隐藏"的不可能状态）
+    hidePortrait(); hideGroupPortrait();
+    // ② 打字机 + 对话框：立刻停逐字 + 清旧文本 + 强制显示（去掉搜证隐藏态 search-hidden）
+    clearInterval(window.typingTimer); window.typingDone = true; typingDone = true;
+    clearDialogue();
+    (function forceShowDialogueSafe(){
+      const d = $('dialogueBox');
+      if(!d) return;
+      d.classList.remove('search-hidden');   // 🔎 搜证模式 display:none !important
+      d.style.display = '';                  // 兜底：任何手动 display:none 都清掉
+    })();
+    showDialogueBox();
+    // ③ 搜索模式/遗留搜证定时器：立刻退出搜证态
+    $('gameInner').classList.remove('search-mode', 'choices-open');
+    clearTimeout(_autoSearchTimer); _autoSearchTimer = null;
+    closeSearchContinueBar();
+    // ④ 选项面板 + 追加台词缓存：防止"知无不言"等旧台词叠加
+    hideChoices();
+    pendingAfterLines = []; pendingThen = null;
+    currentLines = []; lineIdx = 0;         // 彻底清空本节点台词缓存（额外保险：防止空窗期内 nextLine 乱播）
+
+    showScreen('game');
+    setStatsUI();
+    // 强制刷新背包/推论面板数据（避免空白）
+    if(typeof renderInv === 'function') renderInv();
+    if(typeof renderDed === 'function') renderDed();
+    toast(`${previewMode ? '📖 跳跃到' : '🔄 回跳到'}「${sceneName}」，线索已保留无需重捡`, 3000);
+    // 方案1：去掉 800ms 空窗期 —— 立即进入 playNode，让残留态在同一帧被 playNode 入口的清台逻辑二次覆盖（幂等安全）
+    playNode(nodeId);
+  }
 }
 
 function resetBranchDiagram(){
