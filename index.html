@@ -3308,6 +3308,10 @@ function showHotspots(cfg){
       }
       const allGot = cfg.require.every(id => state.clues.includes(id));
       if(allGot){
+        // ✅ 新方案：continueBar z保持60（严格在 clue-modal z80 下方，遵守用户「继续按钮在弹窗下」设计要求）
+        //    解决遮挡的思路不是提升按钮z，而是：如果"刚拾取的这一条恰好凑齐全部线索"(!already) → 主动关闭线索详情弹窗
+        //      → 弹窗消失后，continueBar（z60，位于场景+对话框之上）就自然露出在玩家视野里，不存在遮挡
+        if(!already) closeMask('clueModal');
         // newly picked 才 toast 集齐；老线索就不必重复提示
         if(!already) toast(cfg.msg + '（线索已集齐，请拾取完毕后点击「继续」推进剧情）', 3200);
         showSearchContinueBar();
@@ -3331,10 +3335,10 @@ function showSearchContinueBar(){
   if($('searchContinueBar')) return; // 已显示
   const bar = document.createElement('div');
   bar.id = 'searchContinueBar';
-  // ✅ 方向2：z-index 60 → 88
-  //   原 60 < .clue-modal(z80) → 玩家捡最后一条线索时，线索弹窗直接盖住了继续按钮 → 玩家以为"按钮没生成"
-  //   提为 88（比 clue-modal z80 再高 8 点余量）→ 即使线索弹窗开着，继续按钮也浮在最上层，玩家一眼能看到
-  bar.style.cssText = 'position:absolute;left:50%;bottom:8%;transform:translateX(-50%);z-index:88;display:flex;gap:14px;align-items:center;';
+  // ✅ 严格遵守用户设计约束：continueBar z-index 保持 60 < clue-modal z80（按钮在弹窗下方）
+  //   解决"最后一条线索捡完按钮被遮挡"的根因不在提按钮z，而在 onclick 里「捡最后一条凑齐时自动关线索详情弹窗」(3312行)
+  //      → 弹窗消失后按钮自然露出（场景+对话框上方，视觉无遮挡）
+  bar.style.cssText = 'position:absolute;left:50%;bottom:8%;transform:translateX(-50%);z-index:60;display:flex;gap:14px;align-items:center;';
   bar.innerHTML = `
     <button class="btn primary" onclick="advanceAfterSearch()" style="padding:12px 28px;font-size:16px;border-radius:10px;letter-spacing:1px;">▶ 继续剧情</button>
   `;
