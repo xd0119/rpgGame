@@ -31,13 +31,22 @@
             }
           }catch(e){
             // console.log('GoatCounter API error:', e);
+            $('ciPlayed').textContent = '0';
           }
-        }catch(e){
-          // console.log('GoatCounter timeout/error:', e);
-        }
+        }, 10000);
+      } else {
+        $('ciPlayed').textContent = '0';
       }
     }catch(e){
-      // console.log('GoatCounter init failed:', e);
+      $('ciPlayed').textContent = '0';
     }
   })();
-  window.initGoatCounter = initGoatCounter;
+
+  // --- 2. 玩家评分：Cloudflare Worker + KV（真共享评分） ---
+  //       部署完 Worker 后把下面的 URL 替换成你的 Worker 地址
+  const RATING_API = 'https://rpg-rating.xd0119.workers.dev';
+  (function initRating(){
+    const ratingNumEl = document.querySelector('#ciRatingNum');
+    if(!ratingNumEl) return;
+
+    const stars = document.querySelectorAll('.ci-rating-star');
