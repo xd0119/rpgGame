@@ -4952,6 +4952,10 @@ document.addEventListener('DOMContentLoaded', ()=>{
   // --- 1. GoatCounter：累计游玩统计 ---
   (function initGoatCounter(){
     try{
+      // 调试信息
+      console.log('[GoatCounter] GOATCOUNTER_CODE:', GOATCOUNTER_CODE);
+      console.log('[GoatCounter] 是否配置了有效代码:', GOATCOUNTER_CODE && !GOATCOUNTER_CODE.includes('your_'));
+      
       if(GOATCOUNTER_CODE && !GOATCOUNTER_CODE.includes('your_')){
         // 直接走像素上报（避开 count.js，广告拦截器不会拦 1x1 gif）
         const payload = encodeURIComponent(JSON.stringify({
@@ -4978,19 +4982,25 @@ document.addEventListener('DOMContentLoaded', ()=>{
               setTimeout(()=>fail(new Error('gc timeout')), 8000);
             });
             if(total > 0){
+              console.log('[GoatCounter] API 返回 total:', total);
               $('ciPlayed').textContent = total.toLocaleString();
+            } else {
+              console.log('[GoatCounter] API 返回 total <= 0，使用兜底值');
+              $('ciPlayed').textContent = '10'; // 兜底值 10
             }
           }catch(e){
-            // console.log('GoatCounter API error:', e);
-            $('ciPlayed').textContent = '0';
-          }
-        }, 10000);
-      } else {
-        $('ciPlayed').textContent = '0';
+              console.log('[GoatCounter] API 错误:', e);
+              $('ciPlayed').textContent = '10'; // 兜底值 10
+            }
+          }, 10000);
+        } else {
+          console.log('[GoatCounter] 未配置有效代码，使用兜底值');
+          $('ciPlayed').textContent = '10'; // 兜底值 10
+        }
+      }catch(e){
+        console.log('[GoatCounter] 初始化错误:', e);
+        $('ciPlayed').textContent = '10'; // 兜底值 10
       }
-    }catch(e){
-      $('ciPlayed').textContent = '0';
-    }
   })();
 
   // --- 2. 玩家评分：Cloudflare Worker + KV（真共享评分） ---
