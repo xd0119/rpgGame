@@ -4967,32 +4967,36 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
         // 10s 后用 JSONP 调一次拿真实累计（GoatCounter API 支持 callback=?）
         // 如果 JSONP/CORS 失败就显示 0（兜底）
+        // 10s 后用 CORS API 调一次拿真实累计（绕过广告拦截器）
         setTimeout(async ()=>{
           try{
-            const total = await new Promise((resolve, fail)=>{
-              const cbName = 'gc_total_cb_' + Date.now();
-              window[cbName] = function(d){
-                try{ resolve((d && d.total && d.total.count) || 0); }catch(_){ resolve(0); }
-                setTimeout(()=>{ try { delete window[cbName]; }catch(e){} }, 100);
-              };
-              const s2 = document.createElement('script');
-              s2.onerror = ()=>{ fail(new Error('gc jsonp blocked')); };
-              s2.src = 'https://' + GOATCOUNTER_CODE + '.goatcounter.com/api/v0/stats/total/period?daily&r=month&callback=' + cbName;
-              document.head.appendChild(s2);
-              setTimeout(()=>fail(new Error('gc timeout')), 8000);
+            const response = await fetch('https://' + GOATCOUNTER_CODE + '.goatcounter.com/api/v0/stats/total/period?daily&r=month', {
+              method: 'GET',
+              mode: 'cors',
+              headers: {
+                'Content-Type': 'application/json',
+              }
             });
-            if(total > 0){
-              console.log('[GoatCounter] API 返回 total:', total);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const total = (data && data.total && data.total.count) || 0;
+            
+            console.log('[GoatCounter] CORS API 返回 total:', total);
+            if (total > 0) {
               $('ciPlayed').textContent = total.toLocaleString();
             } else {
               console.log('[GoatCounter] API 返回 total <= 0，使用兜底值');
               $('ciPlayed').textContent = '10'; // 兜底值 10
             }
           }catch(e){
-              console.log('[GoatCounter] API 错误:', e);
-              $('ciPlayed').textContent = '10'; // 兜底值 10
-            }
-          }, 10000);
+            console.log('[GoatCounter] CORS API 错误:', e);
+            $('ciPlayed').textContent = '10'; // 兜底值 10
+          }
+        }, 10000);
         } else {
           console.log('[GoatCounter] 未配置有效代码，使用兜底值');
           $('ciPlayed').textContent = '10'; // 兜底值 10
