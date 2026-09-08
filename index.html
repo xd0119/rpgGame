@@ -28,3 +28,16 @@
             });
             if(total > 0){
               $('ciPlayed').textContent = total.toLocaleString();
+            }
+          }catch(e){
+            // console.log('GoatCounter API error:', e);
+          }
+        }catch(e){
+          // console.log('GoatCounter timeout/error:', e);
+        }
+      }
+    }catch(e){
+      // console.log('GoatCounter init failed:', e);
+    }
+  })();
+  window.initGoatCounter = initGoatCounter;
