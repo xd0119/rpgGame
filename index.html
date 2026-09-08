@@ -4965,38 +4965,41 @@ document.addEventListener('DOMContentLoaded', ()=>{
         const img = new Image();
         img.src = 'https://' + GOATCOUNTER_CODE + '.goatcounter.com/count?p=' + payload; // no onerror / onload，静默即可
 
-        // 10s 后用 JSONP 调一次拿真实累计（GoatCounter API 支持 callback=?）
-        // 如果 JSONP/CORS 失败就显示 0（兜底）
-        // 10s 后用 CORS API 调一次拿真实累计（绕过广告拦截器）
+        // 方案1：像素统计（立即执行，无阻塞）
+        const payload = encodeURIComponent(JSON.stringify({
+          p: '/storm-isle-played',
+          r: document.referrer || null
+        }));
+        const img = new Image();
+        img.src = 'https://' + GOATCOUNTER_CODE + '.goatcounter.com/count?p=' + payload; // no onerror / onload，静默即可
+        
+        // 方案2：使用简化的 API 端点（3秒后尝试）
         setTimeout(async ()=>{
-          try{
-            const response = await fetch('https://' + GOATCOUNTER_CODE + '.goatcounter.com/api/v0/stats/total/period?daily&r=month', {
+          try {
+            // 尝试使用简化的 API 端点
+            const response = await fetch('https://' + GOATCOUNTER_CODE + '.goatcounter.com/api/v0/stats/total', {
               method: 'GET',
-              mode: 'cors',
-              headers: {
-                'Content-Type': 'application/json',
-              }
+              mode: 'cors'
             });
             
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}`);
+            if (response.ok) {
+              const data = await response.json();
+              const total = (data && data.total && data.total.count) || 0;
+              console.log('[GoatCounter] API 返回 total:', total);
+              if (total > 0) {
+                $('ciPlayed').textContent = total.toLocaleString();
+                return;
+              }
             }
             
-            const data = await response.json();
-            const total = (data && data.total && data.total.count) || 0;
-            
-            console.log('[GoatCounter] CORS API 返回 total:', total);
-            if (total > 0) {
-              $('ciPlayed').textContent = total.toLocaleString();
-            } else {
-              console.log('[GoatCounter] API 返回 total <= 0，使用兜底值');
-              $('ciPlayed').textContent = '10'; // 兜底值 10
-            }
-          }catch(e){
-            console.log('[GoatCounter] CORS API 错误:', e);
-            $('ciPlayed').textContent = '10'; // 兜底值 10
+            // 如果 API 失败，使用兜底值
+            console.log('[GoatCounter] API 失败，使用兜底值');
+            $('ciPlayed').textContent = '10';
+          } catch(e) {
+            console.log('[GoatCounter] API 错误:', e);
+            $('ciPlayed').textContent = '10';
           }
-        }, 10000);
+        }, 3000); // 3秒后尝试
         } else {
           console.log('[GoatCounter] 未配置有效代码，使用兜底值');
           $('ciPlayed').textContent = '10'; // 兜底值 10
